@@ -1,0 +1,2303 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>html + synd demo</title>
+	<link rel="shortcut icon" href="#" />
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<style>
+		:root {
+			color-scheme: light;
+			--bg: #f6f1e8;
+			--surface: rgba(255, 252, 247, 0.92);
+			--surface-strong: #fffdf8;
+			--ink: #1f2430;
+			--muted: #5f6470;
+			--line: rgba(31, 36, 48, 0.12);
+			--brand: #17616b;
+			--brand-soft: #d9ece7;
+			--accent: #b85c38;
+			--accent-soft: #f8dfd2;
+			--shadow: 0 20px 50px rgba(44, 35, 24, 0.12);
+			--radius: 22px;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			color: var(--ink);
+			background:
+				radial-gradient(circle at top left, rgba(255, 255, 255, 0.85), transparent 32%),
+				linear-gradient(180deg, #fdf8ef 0%, #f6f1e8 48%, #efe7db 100%);
+			font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+		}
+
+		button,
+		input,
+		textarea,
+		select {
+			font: inherit;
+		}
+
+		.page {
+			max-width: 1240px;
+			margin: 0 auto;
+			padding: 40px 20px 88px;
+		}
+
+		.hero {
+			display: grid;
+			grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+			gap: 24px;
+			padding: 30px;
+			border: 1px solid var(--line);
+			border-radius: 30px;
+			background:
+				linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(247, 241, 232, 0.9)),
+				linear-gradient(180deg, rgba(23, 97, 107, 0.08), rgba(184, 92, 56, 0.08));
+			box-shadow: var(--shadow);
+		}
+
+		.kicker {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 7px 12px;
+			border-radius: 999px;
+			background: var(--brand-soft);
+			color: var(--brand);
+			font-size: 0.9rem;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
+
+		.hero h1 {
+			margin: 16px 0 12px;
+			font-size: clamp(2.2rem, 5vw, 4.25rem);
+			line-height: 0.98;
+			font-weight: 700;
+		}
+
+		.hero p,
+		.section-head p,
+		.demo-card p,
+		.demo-live p,
+		.demo-live li,
+		.log-item,
+		.meta-row,
+		.metric-label {
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		}
+
+		.hero p,
+		.section-head p {
+			margin: 0;
+			max-width: 72ch;
+			color: var(--muted);
+			font-size: 1.02rem;
+			line-height: 1.55;
+		}
+
+		.hero-steps {
+			display: grid;
+			gap: 12px;
+		}
+
+		.hero-step {
+			padding: 14px 16px;
+			border: 1px solid var(--line);
+			border-radius: 18px;
+			background: rgba(255, 255, 255, 0.72);
+		}
+
+		.hero-step strong {
+			display: block;
+			margin-bottom: 4px;
+			font-size: 1rem;
+		}
+
+		.hero-step span {
+			display: block;
+			color: var(--muted);
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			font-size: 0.94rem;
+			line-height: 1.45;
+		}
+
+		.section-block {
+			margin-top: 34px;
+		}
+
+		.section-head {
+			margin-bottom: 18px;
+		}
+
+		.section-head h2 {
+			margin: 0 0 8px;
+			font-size: clamp(1.7rem, 3vw, 2.35rem);
+		}
+
+		.demo-card {
+			margin-top: 18px;
+			padding: 22px;
+			border: 1px solid var(--line);
+			border-radius: var(--radius);
+			background: var(--surface);
+			box-shadow: 0 12px 28px rgba(48, 37, 22, 0.08);
+		}
+
+		.demo-card h3 {
+			margin: 0 0 8px;
+			font-size: 1.45rem;
+		}
+
+		.demo-card p {
+			margin: 0;
+			color: var(--muted);
+			line-height: 1.5;
+		}
+
+		.demo-grid {
+			display: grid;
+			grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+			gap: 18px;
+			margin-top: 18px;
+		}
+
+		.demo-panel {
+			display: flex;
+			flex-direction: column;
+			min-height: 100%;
+			border: 1px solid rgba(31, 36, 48, 0.1);
+			border-radius: 18px;
+			background: var(--surface-strong);
+			overflow: hidden;
+		}
+
+		.panel-title {
+			padding: 12px 16px;
+			border-bottom: 1px solid rgba(31, 36, 48, 0.08);
+			background: rgba(23, 97, 107, 0.06);
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			font-size: 0.88rem;
+			font-weight: 700;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			color: var(--brand);
+		}
+
+		.panel-body {
+			padding: 16px;
+			height: 100%;
+		}
+
+		.code-block {
+			margin: 0;
+			overflow: auto;
+			padding: 18px;
+			border-radius: 14px;
+			background: #1e222b;
+			color: #eef3ff;
+			font-family: Consolas, "Courier New", monospace;
+			font-size: 0.92rem;
+			line-height: 1.5;
+		}
+
+		.code-block code {
+			display: block;
+			white-space: pre;
+		}
+
+		.code-stack {
+			display: grid;
+			gap: 14px;
+		}
+
+		.code-sample {
+			display: grid;
+			gap: 8px;
+		}
+
+		.code-caption {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 10px;
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			font-size: 0.84rem;
+			color: var(--muted);
+		}
+
+		.code-lang {
+			display: inline-flex;
+			align-items: center;
+			padding: 3px 8px;
+			border-radius: 999px;
+			background: rgba(23, 97, 107, 0.1);
+			color: var(--brand);
+			font-size: 0.74rem;
+			font-weight: 700;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
+
+		.tok-comment {
+			color: #7f8798;
+		}
+
+		.tok-keyword,
+		.tok-punct {
+			color: #ff9f6e;
+		}
+
+		.tok-builtin {
+			color: #7ed7c1;
+		}
+
+		.tok-string {
+			color: #c9e478;
+		}
+
+		.tok-template {
+			color: #d8e6b7;
+		}
+
+		.tok-template-delim {
+			color: #7ed7c1;
+		}
+
+		.tok-template-expr {
+			color: #f5c26b;
+		}
+
+		.tok-number,
+		.tok-tag {
+			color: #7fb3ff;
+		}
+
+		.tok-attr {
+			color: #f5c26b;
+		}
+
+		.tok-json-key {
+			color: #f5c26b;
+		}
+
+		.tok-json-string {
+			color: #c9e478;
+		}
+
+		.tok-json-number {
+			color: #7fb3ff;
+		}
+
+		.tok-json-literal {
+			color: #7ed7c1;
+		}
+
+		.demo-live {
+			display: grid;
+			align-items: start;
+			gap: 14px;
+			min-height: 100%;
+		}
+
+		.sample-note,
+		.counter-box,
+		.state-card,
+		.disclosure,
+		.note-box,
+		.workspace {
+			padding: 16px;
+			border: 1px solid rgba(31, 36, 48, 0.1);
+			border-radius: 18px;
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(247, 243, 235, 0.9));
+		}
+
+		.sample-note h4,
+		.state-card h4,
+		.workspace h4,
+		.workspace h5 {
+			margin: 0 0 8px;
+		}
+
+		.pill-row,
+		.button-row,
+		.meta-row {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 10px;
+		}
+
+		.pill,
+		.status-pill {
+			display: inline-flex;
+			align-items: center;
+			padding: 4px 10px;
+			border-radius: 4px;
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			font-size: 0.82rem;
+			font-weight: 600;
+		}
+
+		.pill {
+			background: var(--brand-soft);
+			color: var(--brand);
+			margin-top: 8px;
+		}
+
+		.pill.accent,
+		.status-pill.ready {
+			background: #dff1dc;
+			color: #2f6b37;
+		}
+
+		.status-pill.waiting {
+			background: var(--accent-soft);
+			color: var(--accent);
+		}
+
+		.status-pill.neutral {
+			background: rgba(23, 97, 107, 0.12);
+			color: var(--brand);
+		}
+
+		.demo-button {
+			padding: 4px 14px;
+			border: 1px solid transparent;
+			border-radius: 999px;
+			background: var(--brand);
+			color: #fff;
+			cursor: pointer;
+			transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			font-size: 0.92rem;
+			margin-top: 8px;
+		}
+
+		.demo-button:hover {
+			transform: translateY(-1px);
+			background-color: white;
+			color: black;
+			box-shadow: 0 8px 18px rgba(23, 97, 107, 0.18);
+		}
+
+		.demo-button.small {
+			padding: 6px 10px;
+			font-size: 0.84rem;
+		}
+
+		.demo-stack {
+			display: grid;
+			gap: 14px;
+		}
+
+		.counter-compare {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 14px;
+		}
+
+		.counter-variant {
+			display: grid;
+			gap: 12px;
+			padding: 16px;
+			border: 1px solid rgba(31, 36, 48, 0.1);
+			border-radius: 18px;
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 243, 235, 0.9));
+		}
+
+		.counter-variant-head {
+			display: grid;
+			gap: 4px;
+		}
+
+		.counter-variant-head strong {
+			font-size: 1rem;
+		}
+
+		.counter-variant-note {
+			margin: 0;
+			color: var(--muted);
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			font-size: 0.9rem;
+			line-height: 1.45;
+		}
+
+		.counter-variant-body {
+			display: grid;
+			gap: 10px;
+		}
+
+		.counter-pair-stack {
+			display: grid;
+			gap: 16px;
+		}
+
+		.counter-pair {
+			display: grid;
+			grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+			gap: 16px;
+			align-items: start;
+		}
+
+		.counter-pair .code-sample,
+		.counter-pair .counter-variant {
+			height: 100%;
+		}
+
+		.demo-list {
+			margin: 0;
+			padding-left: 18px;
+		}
+
+		.demo-list li {
+			margin: 6px 0;
+		}
+
+		.demo-table {
+			width: 100%;
+			border-collapse: collapse;
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		}
+
+		.demo-table th,
+		.demo-table td {
+			padding: 10px 12px;
+			border: 1px solid rgba(31, 36, 48, 0.1);
+			text-align: left;
+		}
+
+		.demo-table th {
+			background: rgba(23, 97, 107, 0.08);
+		}
+
+		.metric-grid {
+			display: grid;
+			grid-template-columns: repeat(5, minmax(0, 1fr));
+			gap: 12px;
+		}
+
+		.metric-card {
+			padding: 14px;
+			border: 1px solid rgba(31, 36, 48, 0.1);
+			border-radius: 16px;
+			background: rgba(255, 255, 255, 0.75);
+		}
+
+		.metric-card strong {
+			display: block;
+			margin-top: 6px;
+			font-size: 1.35rem;
+		}
+
+		.workspace {
+			display: grid;
+			gap: 16px;
+		}
+
+		.workspace-top {
+			display: grid;
+			gap: 14px;
+		}
+
+		.workspace-title p,
+		.inline-note {
+			margin: 0;
+			color: var(--muted);
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		}
+
+		.workspace-columns {
+			display: grid;
+			grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.9fr);
+			gap: 16px;
+		}
+
+		.list-shell {
+			display: grid;
+			gap: 10px;
+		}
+
+		.list-item,
+		.log-item {
+			padding: 14px;
+			border: 1px solid rgba(31, 36, 48, 0.08);
+			border-radius: 16px;
+			background: rgba(255, 255, 255, 0.78);
+		}
+
+		.synd-intro {
+			padding: 22px;
+			border: 1px solid rgba(23, 97, 107, 0.18);
+			border-radius: 22px;
+			background: linear-gradient(135deg, rgba(23, 97, 107, 0.1), rgba(255, 255, 255, 0.88));
+			box-shadow: 0 12px 28px rgba(23, 97, 107, 0.08);
+		}
+
+		.synd-intro h3 {
+			margin: 0 0 10px;
+			font-size: 1.3rem;
+		}
+
+		.synd-intro p,
+		.synd-intro li,
+		.json-viewer summary,
+		.json-viewer p {
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			color: var(--muted);
+			line-height: 1.55;
+		}
+
+		.synd-intro ul {
+			margin: 14px 0 0;
+			padding-left: 18px;
+		}
+
+		.synd-intro li + li {
+			margin-top: 6px;
+		}
+
+		.json-viewer {
+			border: 1px solid rgba(31, 36, 48, 0.1);
+			border-radius: 16px;
+			background: rgba(255, 255, 255, 0.84);
+			overflow: hidden;
+			margin-top: 10px;
+		}
+
+		.json-viewer summary {
+			cursor: pointer;
+			padding: 12px 14px;
+			font-weight: 600;
+			list-style: none;
+		}
+
+		.json-viewer summary::-webkit-details-marker {
+			display: none;
+		}
+
+		.json-viewer-body {
+			padding: 0 14px 14px;
+		}
+
+		.json-viewer-body p {
+			margin: 0 0 10px;
+			font-size: 0.9rem;
+		}
+
+		.json-block {
+			margin: 0;
+			padding: 10px;
+			border-radius: 14px;
+			background: #18202a;
+			color: #eef3ff;
+			font-family: Consolas, "Courier New", monospace;
+			font-size: 0.86rem;
+			line-height: 1.55;
+		}
+
+		.json-line {
+			display: block;
+			margin: 0;
+			padding: 1px 6px;
+			border-radius: 8px;
+			white-space: pre-wrap;
+			word-break: break-word;
+		}
+
+		.log-shell {
+			align-content: start;
+		}
+
+		.api-grid {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 16px;
+		}
+
+		.api-card {
+			padding: 18px;
+			border: 1px solid rgba(31, 36, 48, 0.1);
+			border-radius: 18px;
+			background: rgba(255, 255, 255, 0.82);
+		}
+
+		.api-card h3 {
+			margin: 0 0 10px;
+			font-size: 1.1rem;
+		}
+
+		.api-signature {
+			display: inline-block;
+			margin-bottom: 10px;
+			padding: 6px 10px;
+			border-radius: 12px;
+			background: #1e222b;
+			color: #eef3ff;
+			font-family: Consolas, "Courier New", monospace;
+			font-size: 0.86rem;
+		}
+
+		.api-card p,
+		.api-card li {
+			margin: 0;
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			color: var(--muted);
+			line-height: 1.5;
+		}
+
+		.api-card ul {
+			margin: 12px 0 0;
+			padding-left: 18px;
+		}
+
+		.api-card li + li {
+			margin-top: 6px;
+		}
+
+		@media (max-width: 980px) {
+			.hero,
+			.demo-grid,
+			.workspace-columns {
+				grid-template-columns: 1fr;
+			}
+
+			.metric-grid {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+
+			.counter-compare {
+				grid-template-columns: 1fr;
+			}
+
+			.counter-pair {
+				grid-template-columns: 1fr;
+			}
+
+			.api-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		@media (max-width: 640px) {
+			.page {
+				padding-inline: 14px;
+			}
+
+			.hero,
+			.demo-card {
+				padding: 18px;
+			}
+
+			.metric-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+
+	</style>
+	<script type="module">
+import { html, synd } from '../deploy/synd.mjs';
+const asCode = (...parts) => highlightMixedCode(parts.join('\n'));
+
+const escapeHTML = text => text
+	.replace(/&/g, '&amp;')
+	.replace(/</g, '&lt;')
+	.replace(/>/g, '&gt;')
+	.replace(/"/g, '&quot;')
+
+function highlightMarkup(source) {
+	return source.replace(/&lt;(\/)?([A-Za-z][\w:-]*)([\s\S]*?)&gt;/g, (match, slash, tagName, rawAttrs) => {
+		let trailingSlash = ''
+		let attrs = rawAttrs
+
+		attrs = attrs.replace(/(\s*)\/$/, (_, whitespace) => {
+			trailingSlash = `${whitespace}<span class="tok-punct">/</span>`
+			return ''
+		})
+
+		const highlightedAttrs = attrs.replace(/(\s+)([^\s=\/]+)(?:=(&quot;.*?&quot;|'.*?'|[^\s]+))?/g, (_, whitespace, attrName, attrValue) => {
+			const renderedValue = attrValue
+				? `<span class="tok-punct">=</span><span class="tok-string">${attrValue}</span>`
+				: ''
+			return `${whitespace}<span class="tok-attr">${attrName}</span>${renderedValue}`
+		})
+
+		return `<span class="tok-punct">&lt;${slash ?? ''}</span><span class="tok-tag">${tagName}</span>${highlightedAttrs}${trailingSlash}<span class="tok-punct">&gt;</span>`
+	})
+}
+
+function highlightMixedCode(source) {
+	return highlightJsFragment(source)
+}
+
+function highlightJsFragment(source) {
+	let result = ''
+	let plainStart = 0
+	let index = 0
+
+	const flushPlain = end => {
+		if (end > plainStart)
+			result += highlightJsPlain(source.slice(plainStart, end))
+	}
+
+	while (index < source.length) {
+		if (source.startsWith('//', index)) {
+			flushPlain(index)
+			const end = findLineCommentEnd(source, index)
+			result += `<span class="tok-comment">${escapeHTML(source.slice(index, end))}</span>`
+			index = end
+			plainStart = end
+			continue
+		}
+
+		if (source.startsWith('/*', index)) {
+			flushPlain(index)
+			const end = findBlockCommentEnd(source, index)
+			result += `<span class="tok-comment">${escapeHTML(source.slice(index, end))}</span>`
+			index = end
+			plainStart = end
+			continue
+		}
+
+		if (source[index] === '\'' || source[index] === '"') {
+			flushPlain(index)
+			const end = findStringEnd(source, index, source[index])
+			result += `<span class="tok-string">${escapeHTML(source.slice(index, end))}</span>`
+			index = end
+			plainStart = end
+			continue
+		}
+
+		if (source[index] === '`') {
+			flushPlain(index)
+			const template = highlightTemplateLiteral(source, index)
+			result += template.html
+			index = template.nextIndex
+			plainStart = template.nextIndex
+			continue
+		}
+
+		index += 1
+	}
+
+	flushPlain(source.length)
+	return result
+}
+
+function highlightJsPlain(source) {
+	const tokenPattern = /\b(const|let|var|function|return|if|else|for|of|in|new|true|false|null|undefined)\b|\b(html|synd|document)\b|\b\d+(?:\.\d+)?\b|=>|===|!==|==|!=|<=|>=|\+\+|--|\|\||&&|\.\.\.|[=+\-*\/%<>!?:;.,()[\]{}]/g
+	let result = ''
+	let lastIndex = 0
+
+	for (const match of source.matchAll(tokenPattern)) {
+		result += escapeHTML(source.slice(lastIndex, match.index))
+
+		if (match[1])
+			result += `<span class="tok-keyword">${match[1]}</span>`
+		else if (match[2])
+			result += `<span class="tok-builtin">${match[2]}</span>`
+		else if (/^\d/.test(match[0]))
+			result += `<span class="tok-number">${match[0]}</span>`
+		else
+			result += `<span class="tok-punct">${escapeHTML(match[0])}</span>`
+
+		lastIndex = match.index + match[0].length
+	}
+
+	result += escapeHTML(source.slice(lastIndex))
+	return result
+}
+
+function highlightTemplateLiteral(source, startIndex) {
+	let result = '<span class="tok-template-delim">`</span>'
+	let index = startIndex + 1
+	let chunkStart = index
+
+	while (index < source.length) {
+		if (source[index] === '\\') {
+			index += 2
+			continue
+		}
+
+		if (source[index] === '`') {
+			result += highlightTemplateChunk(source.slice(chunkStart, index))
+			result += '<span class="tok-template-delim">`</span>'
+			return { html: result, nextIndex: index + 1 }
+		}
+
+		if (source[index] === '$' && source[index + 1] === '{') {
+			result += highlightTemplateChunk(source.slice(chunkStart, index))
+			const end = findInterpolationEnd(source, index + 2)
+			result += `<span class="tok-template-expr">\${</span>${highlightJsFragment(source.slice(index + 2, end))}<span class="tok-template-expr">}</span>`
+			index = end + 1
+			chunkStart = index
+			continue
+		}
+
+		index += 1
+	}
+
+	result += highlightTemplateChunk(source.slice(chunkStart))
+	return { html: result, nextIndex: source.length }
+}
+
+function highlightTemplateChunk(source) {
+	if (!source)
+		return ''
+		
+	return `<span class="tok-template">${highlightMarkup(escapeHTML(source))}</span>`
+}
+
+function findLineCommentEnd(source, startIndex) {
+	let index = startIndex
+	while (index < source.length && source[index] !== '\n')
+		index += 1
+	return index
+}
+
+function findBlockCommentEnd(source, startIndex) {
+	const end = source.indexOf('*/', startIndex + 2)
+	return end === -1 ? source.length : end + 2
+}
+
+function findStringEnd(source, startIndex, quote) {
+	let index = startIndex + 1
+	while (index < source.length) {
+		if (source[index] === '\\') {
+			index += 2
+			continue
+		}
+		if (source[index] === quote)
+			return index + 1
+		index += 1
+	}
+	return source.length
+}
+
+function findInterpolationEnd(source, startIndex) {
+	let depth = 1
+	let index = startIndex
+
+	while (index < source.length) {
+		if (source.startsWith('//', index)) {
+			index = findLineCommentEnd(source, index)
+			continue
+		}
+
+		if (source.startsWith('/*', index)) {
+			index = findBlockCommentEnd(source, index)
+			continue
+		}
+
+		if (source[index] === '\'' || source[index] === '"') {
+			index = findStringEnd(source, index, source[index])
+			continue
+		}
+
+		if (source[index] === '`') {
+			index = skipTemplateLiteral(source, index)
+			continue
+		}
+
+		if (source[index] === '{')
+			depth += 1
+		else if (source[index] === '}') {
+			depth -= 1
+			if (depth === 0)
+				return index
+		}
+
+		index += 1
+	}
+
+	return source.length
+}
+
+function skipTemplateLiteral(source, startIndex) {
+	let index = startIndex + 1
+
+	while (index < source.length) {
+		if (source[index] === '\\') {
+			index += 2
+			continue
+		}
+
+		if (source[index] === '`')
+			return index + 1
+
+		if (source[index] === '$' && source[index + 1] === '{') {
+			index = findInterpolationEnd(source, index + 2) + 1
+			continue
+		}
+
+		index += 1
+	}
+
+	return source.length
+}
+
+function highlightCode(source, language = 'js') {
+	return source;
+}
+
+function highlightJSON(source) {
+	return escapeHTML(source)
+		.replace(/^(\s*)"([^"]+)":/gm, '$1<span class="tok-json-key">"$2"</span><span class="tok-punct">:</span>')
+		.replace(/: ("(?:\\.|[^"])*")/g, ': <span class="tok-json-string">$1</span>')
+		.replace(/\b(-?\d+(?:\.\d+)?)\b/g, '<span class="tok-json-number">$1</span>')
+		.replace(/\b(true|false|null)\b/g, '<span class="tok-json-literal">$1</span>')
+		.replace(/([{}\[\],])/g, '<span class="tok-punct">$1</span>')
+}
+
+function createEl(tag, className, text) {
+	const element = document.createElement(tag)
+	if (className)
+		element.className = className
+	if (text !== undefined)
+		element.textContent = text
+	return element
+}
+
+function createSectionHead(title, text) {
+	const head = createEl('div', 'section-head')
+	head.append(createEl('h2', '', title), createEl('p', '', text))
+	return head
+}
+
+function createPanel(title) {
+	const panel = createEl('div', 'demo-panel')
+	panel.append(createEl('div', 'panel-title', title))
+	const body = createEl('div', 'panel-body')
+	panel.append(body)
+	return { panel, body }
+}
+
+function createCodeBlock({ source, language = 'js', label }) {
+	const shell = createEl('div', 'code-sample')
+	const caption = createEl('div', 'code-caption')
+	caption.append(createEl('strong', '', label || (language === 'html' ? 'HTML minta' : 'JS minta')), createEl('span', 'code-lang', language))
+
+	const pre = createEl('pre', 'code-block')
+	const code = createEl('code')
+	code.className = 'language-' + language
+	code.innerHTML = highlightCode(source, language)
+	pre.append(code)
+	return shell.append(caption, pre), shell
+}
+
+function createSyndIntroBlock() {
+	return html`
+		<article class="synd-intro">
+			<h3>Miért kell a synd a html mellé?</h3>
+			<p>A <strong>html</strong> önmagában DOM-ot épít template stringből. Ha később változik az adat, neked kell eldöntened, melyik részt rajzolod újra. A <strong>synd</strong> erre tesz egy könnyű adatfigyelő réteget: a <strong>data</strong> bizonyos ágaihoz DOM-részeket köt, és refresh után csak ezeket a részeket számolja újra.</p>
+			<ul>
+				<li>A <strong>with(path, tpl)</strong> egy objektum- vagy részobjektum-ágat figyel, és csak a hozzá tartozó DOM-részt frissíti.</li>
+				<li>A <strong>for(path, tpl)</strong> listaelemenként hoz létre figyelt DOM-részeket, ezért insert és delete után is stabil marad a szerkezet.</li>
+				<li>A lenyíló adatblokk minden példánál a futó <strong>data</strong> aktuális állapotát mutatja, így azonnal látszik, mire reagál a nézet.</li>
+			</ul>
+		</article>
+	`
+}
+
+function createJSONViewer(data, title = 'Élő JSON adat ↓') {
+	const details = createEl('details', 'json-viewer')
+	const summary = createEl('summary', '', title)
+	const body = createEl('div', 'json-viewer-body')
+	body.append(createEl('p', '', 'Ez a blokk a futó példa aktuális data objektumát mutatja. Minden refresh után frissül.'))
+	const pre = createEl('pre', 'json-block')
+	body.append(pre)
+	details.append(summary, body)
+
+	const render = () => {
+		const source = JSON.stringify(data, null, 2)
+		const sourceLines = source.split('\n')
+		const nextLines = [
+			`const data = ${sourceLines[0]}`,
+			...sourceLines.slice(1, -1),
+			`${sourceLines[sourceLines.length - 1]};`
+		]
+		pre.innerHTML = nextLines.map((line, index) => {
+			return `<span class="json-line">${highlightLiveDataLine(line, index, nextLines.length)}</span>`
+		}).join('')
+	}
+
+	render()
+	return { details, render }
+}
+
+function createCounterVariantCard(title, note) {
+	const card = createEl('article', 'counter-variant')
+	card.append(createEl('div', 'counter-variant-head', title), createEl('p', 'counter-variant-note', note))
+	const body = createEl('div', 'counter-variant-body')
+	card.append(body)
+	return { card, body }
+}
+
+function highlightLiveDataLine(line, index, totalLines) {
+	if (index === 0 || index === totalLines - 1)
+		return highlightMixedCode(line)
+	return highlightJSON(line)
+}
+
+function mountDemoCard(container, example) {
+	const card = createEl('article', 'demo-card')
+	card.append(createEl('h3', '', example.title), createEl('p', '', example.description))
+
+	if (example.inlinePairs) {
+		const pairedRoot = createEl('div', 'counter-pair-stack')
+		for (const pair of example.inlinePairs) {
+			const row = createEl('div', 'counter-pair')
+			row.append(createCodeBlock(pair.codeBlock))
+
+			const livePanel = createEl('div', 'counter-variant')
+			livePanel.append(createEl('div', 'counter-variant-head', pair.label), createEl('p', 'counter-variant-note', pair.note))
+			const liveBody = createEl('div', 'counter-variant-body')
+			livePanel.append(liveBody)
+
+			pair.render(liveBody)
+			row.append(livePanel)
+			pairedRoot.append(row)
+		}
+		card.append(pairedRoot)
+		container.append(card)
+		return
+	}
+
+	const grid = createEl('div', 'demo-grid')
+	const codePanel = createPanel('Kódminta')
+	const livePanel = createPanel('Élő eredmény')
+	const liveRoot = createEl('div', 'demo-live')
+	const codeStack = createEl('div', 'code-stack')
+	const codeBlocks = example.codeBlocks ?? [{ source: example.code, language: example.language ?? 'js' }]
+
+	codeBlocks.forEach(block => codeStack.append(createCodeBlock(block)))
+	codePanel.body.append(codeStack)
+	livePanel.body.append(liveRoot)
+	grid.append(codePanel.panel, livePanel.panel)
+	card.append(grid)
+	container.append(card)
+
+	const result = example.render ? example.render(liveRoot) : undefined
+
+	if (result?.data) {
+		const inspector = createJSONViewer(result.data, example.jsonTitle)
+		if (example.liveDataBeforeCode)
+			codePanel.body.prepend(inspector.details)
+		else
+			codePanel.body.append(inspector.details)
+		if (result.control?.refresh) {
+			const originalRefresh = result.control.refresh.bind(result.control)
+			result.control.refresh = (...args) => {
+				const refreshResult = originalRefresh(...args)
+				inspector.render()
+				return refreshResult
+			}
+		}
+	}
+}
+
+function renderExamples(container, examples) {
+	examples.forEach(example => mountDemoCard(container, example))
+}
+
+function createApiSummarySection() {
+	const section = createEl('section', 'section-block')
+	section.append(createSectionHead('Gyors Térkép Az API-Hoz', 'Ha most találkozol először ezzel a két függvénnyel, innen érdemes kiindulni: előbb a html épít DOM-ot, utána a synd teszi ugyanazt élő adattal frissíthetővé.'))
+
+	const grid = createEl('div', 'api-grid')
+	const cards = [
+		{
+			title: 'html template',
+			signature: 'html`...`',
+			text: 'Valódi DOM node-okat készít közvetlenül template literalból, build lépés nélkül.',
+			bullets: [
+				'Szöveg, Node, tömb vagy callback visszatérési értéke is behelyettesíthető.',
+				'Az onClick jellegű attribútumokhoz közvetlenül függvényt adhatsz.',
+				'A szintaxis közel marad a natív HTML-hez, kommentekkel és boolean attribútumokkal együtt.'
+			]
+		},
+		{
+			title: 'html extra paraméterekkel',
+			signature: 'html(a, b)`...`',
+			text: 'A template callbackjei plusz argumentumokat is kaphatnak, ha valamilyen külső kontextust szeretnél továbbadni.',
+			bullets: [
+				'A callback első paramétere a szülő node, utána jönnek az extra argumentumok.',
+				'Ezt a mintát a synd is használja, amikor scope API-t és parent konténert köt a template-hez.',
+				'Haladó, de hasznos lehet saját helper callbackekhez is.'
+			]
+		},
+		{
+			title: 'synd root',
+			signature: 'synd({ data, container }, template)',
+			text: 'A data objektumhoz egy frissíthető nézetet köt, és kirajzolja a root DOM-ot a megadott containerbe.',
+			bullets: [
+				'A template megkapja az aktuális oData snapshotot és az oRoot watcher API-t.',
+				'Adatmódosítás után a refresh() indítja el a célzott újraszámolást.',
+				'Nem teljes oldalt renderel újra, hanem a figyelt részeket.'
+			]
+		},
+		{
+			title: 'with és for',
+			signature: 'oRoot.with(path, tpl) / oRoot.for(path, tpl)',
+			text: 'Ez a két legfontosabb építőkocka: az egyik objektumágra, a másik listára dolgozik.',
+			bullets: [
+				'A with egy konkrét objektumágat figyel és ahhoz köt nézetet.',
+				'A for listaelemenként hoz létre külön frissíthető DOM-részt.',
+				'A callbackből kapott lokális scope-pal mélyebb ágra is tovább tudsz lépni.'
+			]
+		},
+		{
+			title: 'refresh és diff',
+			signature: 'control.refresh()',
+			text: 'A refresh a korábbi és a jelenlegi adatállapot különbségéből dönti el, mely nézetrészeket kell frissíteni.',
+			bullets: [
+				'Objektumváltozásra, insertre, deletere és remove-ra is reagál.',
+				'A demo példák többsége kézi refresh-t használ, hogy jól látszódjon a működés.',
+				'Ha kell, külön diff lista is átadható haladó használatnál.'
+			]
+		},
+		{
+			title: 'amikor html elég',
+			signature: 'html + kézi render()',
+			text: 'Ha csak markupot akarsz építeni, vagy nagyon kevés az interakció, a html önmagában is jó választás.',
+			bullets: [
+				'Kényelmes egyszerű komponens-szerű blokkokhoz és previewkhoz.',
+				'Kis állapotnál elég lehet egy saját render() függvény.',
+				'A demo első része ezt az alapot mutatja meg.'
+			]
+		},
+		{
+			title: 'amikor synd kell',
+			signature: 'watcherek + refresh()',
+			text: 'A synd ott kezd igazán hasznos lenni, ahol több adatág, feltételek és dinamikus listák mozognak együtt.',
+			bullets: [
+				'Különösen hasznos beágyazott objektumok és tömbök együttélésénél.',
+				'A workspace példa már több watcher együttműködését mutatja.',
+				'A speciális példák az indexelési és sibling-eseteket is külön demonstrálják.'
+			]
+		}
+	]
+
+	for (const cardData of cards) {
+		const card = createEl('article', 'api-card')
+		const list = createEl('ul')
+		for (const bullet of cardData.bullets) {
+			const item = createEl('li', '', bullet)
+			list.append(item)
+		}
+		card.append(createEl('h3', '', cardData.title))
+		card.append(createEl('div', 'api-signature', cardData.signature))
+		card.append(createEl('p', '', cardData.text))
+		card.append(list)
+		grid.append(card)
+	}
+
+	section.append(grid)
+	return section
+}
+
+function getHtmlExamples() {
+	return [
+		{
+			title: '1. DOM építés template stringből',
+			description: 'A legegyszerűbb minta: a html egy template stringből azonnal valódi DOM node-okat készít.',
+			code: asCode(`const view = html\`
+  <article class="sample-note">
+    <h4>Hello html</h4>
+    <p>A template literalból valódi DOM jön létre.</p>
+    <small>Nincs virtuális DOM, nincs külön compile.</small>
+  </article>\`;
+
+container.append(view);`),
+			render: container => {
+				const view = html`
+  <article class="sample-note">
+    <h4>Hello html</h4>
+    <p>A template literalból valódi DOM jön létre.</p>
+    <small>Nincs virtuális DOM, nincs külön compile.</small>
+  </article>`;
+				container.append(view);
+			}
+		},
+		{
+			title: '2. Tömbök és egymás melletti node-ok',
+			description: 'Behelyettesítésként nem csak egy érték jöhet, hanem több node is. Nem kell hozzá külön wrapper elem.',
+			code: asCode(`const tags = ['cím', 'leírás', 'kód', 'output'];
+const view = html\`
+  <div class="pill-row">
+    \${tags.map(tag => html\`<span class="pill">\${tag}</span>\`)}
+  </div>\`;
+
+container.append(view);`),
+			render: container => {
+				const tags = ['cím', 'leírás', 'kód', 'output'];
+				const view = html`
+  <div class="pill-row">
+    ${tags.map(tag => html`<span class="pill">${tag}</span>`)}
+  </div>`;
+				container.append(view);
+			}
+		},
+		{
+			title: '3. Eseménykezelő függvénnyel',
+			description: 'Az eseménykezelőt közvetlenül attribútumba teheted. A példa itt még kézi renderrel frissíti újra a nézetet.',
+			code: asCode(`const data = { clicks: 0 };
+const render = () => container.replaceChildren(html\`
+  <div class="counter-box">
+    <p>Kattintások: <strong>\${data.clicks}</strong></p>
+    <button class="demo-button" onClick="\${e => {
+      data.clicks += 1; 
+      render(); 
+    }}">+1</button>
+  </div>\`);
+render();`),
+  			render: container => {
+const data = { clicks: 0 };
+const render = () => container.replaceChildren(html`
+  <div class="counter-box">
+    <p>Kattintások: <strong>${data.clicks}</strong></p>
+    <button class="demo-button" onClick="${e => {
+      data.clicks += 1; 
+      render(); 
+    }}">+1</button>
+  </div>`);
+render();
+			}
+		},
+		{
+			title: '4. Kommentek és boolean attribútumok',
+			description: 'A html parser kezeli a kommenteket és az olyan attribútumokat is, amelyeknek nincs külön értéke, például az open vagy a disabled.',
+			code: asCode(`const view = html\`
+  <div class="sample-note demo-stack">
+    <h4>Komment + solo attribútum</h4>
+    <p>A parser kezeli a HTML kommentet és az olyan egyedül álló attribútumokat is, mint az <strong>open</strong> vagy a <strong>disabled</strong>.</p>
+    <details open>
+      <summary>Nyitható rész</summary>
+      <!-- Ez a komment csak a DOM-ban jelenik meg -->
+      <p>A markup közel marad a natív HTML-hez.</p>
+    </details>
+    <div class="button-row">
+      <button disabled>disabled</button>
+      <button>aktív</button>
+    </div>
+  </div>
+\`;
+
+container.append(view);`),
+			render: container => {
+				const view = html`
+					<div class="sample-note demo-stack">
+						<h4>Komment + solo attribútum</h4>
+						<p>A parser kezeli a HTML kommentet és az olyan egyedül álló attribútumokat is, mint az <strong>open</strong> vagy a <strong>disabled</strong>.</p>
+						<details open>
+							<summary>Nyitható rész</summary>
+							<!-- Ez a komment csak a DOM-ban jelenik meg -->
+							<p>A markup közel marad a natív HTML-hez.</p>
+						</details>
+						<div class="button-row">
+							<button disabled>disabled</button>
+							<button>aktív</button>
+						</div>
+					</div>
+				`;
+
+				container.append(view);
+			}
+		},
+		{
+			title: '5. Extra paraméterek callbackhez',
+			description: 'A behelyettesített callback megkapja a parent node-ot, és plusz argumentumokat is kaphat. Ez ritkább, de erős minta.',
+			code: asCode(`const view = html(1, 2)\`<div>\${
+  (oParent, ...data) => {
+    oParent.style.color = 'green';
+    return data.map(i => html\`<b>\${i}</b>, \`);
+  }
+}</div>\`;
+
+container.append(view);`),
+			render: container => {
+				const view = html(1, 2)`<div>${(oParent, ...data) => {
+					oParent.style.color = 'green';
+					return data.map(i => html`<b>${i}</b>, `);
+				}}</div>`;
+				container.append(view);
+			}
+		}
+	]
+}
+
+function getSyndExamples() {
+	return [
+		{
+			title: '5. Figyelt objektum a with segítségével',
+			description: 'A legegyszerűbb synd minta: a .profile ág változásaira csak a hozzá tartozó DOM-rész frissül.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    \${oRoot.with('.profile', $ => html\`
+      <div class="state-card">
+        <h4>\${$.name}</h4>
+        <p>Verzió: <strong>\${$.version}</strong></p>
+        <p>Hangulat: <span class="pill accent">\${$.mood}</span></p>
+      </div>
+    \`)}
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => { 
+        data.profile.version += 1; 
+        control.refresh(); }
+      }">Verzió +1</button>
+      <button class="demo-button" onClick="\${() => { 
+        data.profile.mood = data.profile.mood === 'nyugodt' ? 
+          'gyors' : 'nyugodt'; 
+        control.refresh(); 
+      }}">Hangulat váltás</button>
+    </div>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					profile: {
+						name: 'Synd figyelt objektum',
+						version: 1,
+						mood: 'nyugodt'
+					}
+				};
+				let control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						${oRoot.with('.profile', $ => html`
+							<div class="state-card">
+								<h4>${$.name}</h4>
+								<p>Verzió: <strong>${$.version}</strong></p>
+								<p>Hangulat: <span class="pill accent">${$.mood}</span></p>
+							</div>
+						`)}
+						<div class="button-row">
+							<button class="demo-button" onClick="${() => { data.profile.version += 1; control.refresh(); }}">Verzió +1</button>
+							<button class="demo-button" onClick="${() => { data.profile.mood = data.profile.mood === 'nyugodt' ? 'gyors' : 'nyugodt'; control.refresh(); }}">Hangulat váltás</button>
+						</div>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '6. Feltételes DOM watcherrel',
+			description: 'Ugyanaz a watcher visszaadhat DOM-ot vagy null-t, így a feltételes megjelenítés külön állapotgép nélkül megoldható.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => { data.panel.open = !data.panel.open; control.refresh(); }}">Panel váltása</button>
+    </div>
+    \${oRoot.with('.panel', $ => $.open ? html\`
+      <div class="disclosure">
+        <h4>\${$.title}</h4>
+        <p>\${$.text}</p>
+      </div>
+    \` : null)}
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					panel: {
+						open: false,
+						title: 'A watcher csak akkor rajzol, ha szükséges',
+						text: 'A null vagy false visszatérés üres fragmentet eredményez, tehát feltételes DOM-ot kapsz külön trükkök nélkül.'
+					}
+				};
+
+				let control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						<div class="button-row">
+							<button class="demo-button" onClick="${() => { data.panel.open = !data.panel.open; control.refresh(); }}">Panel váltása</button>
+						</div>
+						${oRoot.with('.panel', $ => $.open ? html`
+							<div class="disclosure">
+								<h4>${$.title}</h4>
+								<p>${$.text}</p>
+							</div>
+						` : null)}
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '7. Listafigyelés a for-ral',
+			description: 'A for listaelemenként épít figyelt sort, ezért beszúrás és törlés után sem kell a teljes listát kézzel újrarajzolni.',
+			code: asCode(`let control;
+
+const addItem = () => {
+  data.items.splice(1, 0, { label: 'Új blokk ' + data.nextId, minutes: data.nextId + 1 });
+  data.nextId += 1;
+  control.refresh();
+};
+
+const removeFirst = () => {
+  if (!data.items.length)
+    return;
+  data.items.splice(0, 1);
+  control.refresh();
+};
+
+control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${addItem}">Beszúrás középre</button>
+      <button class="demo-button" onClick="\${removeFirst}">Első törlése</button>
+    </div>
+    <ul class="demo-list">
+      \${oRoot.for('.items', item => html\`<li><strong>\${item.label}</strong> • \${item.minutes} perc</li>\`)}
+    </ul>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					nextId: 4,
+					items: [
+						{ label: 'Cím', minutes: 2 },
+						{ label: 'Leírás', minutes: 4 },
+						{ label: 'Kód + output', minutes: 6 }
+					]
+				};
+				let control;
+
+				const addItem = () => {
+					data.items.splice(1, 0, { label: 'Új blokk ' + data.nextId, minutes: data.nextId + 1 });
+					data.nextId += 1;
+					control.refresh();
+				};
+
+				const removeFirst = () => {
+					if (!data.items.length)
+						return;
+					data.items.splice(0, 1);
+					control.refresh();
+				};
+
+				control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						<div class="button-row">
+							<button class="demo-button" onClick="${addItem}">Beszúrás középre</button>
+							<button class="demo-button" onClick="${removeFirst}">Első törlése</button>
+						</div>
+						<ul class="demo-list">
+							${oRoot.for('.items', item => html`<li><strong>${item.label}</strong> • ${item.minutes} perc</li>`)}
+						</ul>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '8. Mélyebb ágak lokális scope-pal',
+			description: 'A with callback második paramétere egy lokális scope. Ezzel mélyebb ágakra tudsz továbblépni anélkül, hogy mindig a teljes pathot újra leírnád.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    \${oRoot.with('.counters', ($, scope) => html\`
+      <div class="state-card">
+        <h4>Örökölt scope API</h4>
+        <p>Első számláló: <strong>\${$.first}</strong></p>
+        <p>Második ág: \${
+          scope.with('.second', inner => 
+            html\`<span class="pill accent">\${inner.label}: \${inner.value}</span>\`)
+        }</p>
+      </div>
+    \`)}
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => { 
+        data.counters.first += 1;
+        control.refresh();
+      }}">Első +1</button>
+      <button class="demo-button" onClick="\${() => {
+        data.counters.second.value += 1;
+        control.refresh(); 
+      }}">Második +1</button>
+    </div>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					counters: {
+						first: 1,
+						second: {
+							label: 'mély ág',
+							value: 2
+						}
+					}
+				};
+				let control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						${oRoot.with('.counters', ($, scope) => html`
+							<div class="state-card">
+								<h4>Örökölt scope API</h4>
+								<p>Első számláló: <strong>${$.first}</strong></p>
+								<p>Második ág: ${scope.with('.second', inner => html`<span class="pill accent">${inner.label}: ${inner.value}</span>`)}</p>
+							</div>
+						`)}
+						<div class="button-row">
+							<button class="demo-button" onClick="${() => { data.counters.first += 1; control.refresh(); }}">Első +1</button>
+							<button class="demo-button" onClick="${() => { data.counters.second.value += 1; control.refresh(); }}">Második +1</button>
+						</div>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '8.1. Ugyanaz az objektum három with nézetben',
+			description: 'Ugyanaz a .profile ág három külön watcherrel jelenik meg: kártyaként, státusz-sorban és egy rövid összefoglaló mondatban. A gomb ugyanazt az adatot írja át, ezért mindhárom nézet egyszerre változik.',
+			code: asCode(`const presets = [
+  { name: 'Anna', role: 'szerkesztő', mood: 'fókusz', points: 12 },
+  { name: 'Béla', role: 'korrektor', mood: 'ellenőrzés', points: 18 },
+  { name: 'Csilla', role: 'kiadó', mood: 'jóváhagyás', points: 27 }
+];
+
+let presetIndex = 0;
+let control;
+
+const nextPreset = () => {
+  presetIndex = (presetIndex + 1) % presets.length;
+  Object.assign(data.profile, presets[presetIndex]);
+  control.refresh();
+};
+
+control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${nextPreset}">Következő állapot</button>
+    </div>
+    <div class="counter-compare">
+      \${oRoot.with('.profile', $ => html\`
+        <article class="state-card">
+          <h4>Profilkártya</h4>
+          <p><strong>\${$.name}</strong> • \${$.role}</p>
+          <p>Hangulat: <span class="pill accent">\${$.mood}</span></p>
+        </article>
+      \`)}
+      \${oRoot.with('.profile', $ => html\`
+        <article class="sample-note">
+          <h4>Státusz-sor</h4>
+          <div class="pill-row">
+            <span class="pill">\${$.role}</span>
+            <span class="pill accent">\${$.mood}</span>
+            <span class="status-pill neutral">pont: \${$.points}</span>
+          </div>
+        </article>
+      \`)}
+      \${oRoot.with('.profile', $ => html\`
+        <article class="counter-box">
+          <h4>Összefoglaló</h4>
+          <p>\${$.name} most \${$.mood} módban dolgozik, szerepe: <strong>\${$.role}</strong>.</p>
+          <p>Aktív pontszám: <strong>\${$.points}</strong></p>
+        </article>
+      \`)}
+    </div>
+    <p class="inline-note">Mindhárom blokk ugyanarra a <strong>.profile</strong> objektumra kötött watcher, csak más markupot rajzol.</p>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const presets = [
+					{ name: 'Anna', role: 'szerkesztő', mood: 'fókusz', points: 12 },
+					{ name: 'Béla', role: 'korrektor', mood: 'ellenőrzés', points: 18 },
+					{ name: 'Csilla', role: 'kiadó', mood: 'jóváhagyás', points: 27 }
+				];
+				const data = {
+					profile: { ...presets[0] }
+				};
+				let presetIndex = 0;
+				let control;
+
+				const nextPreset = () => {
+					presetIndex = (presetIndex + 1) % presets.length;
+					Object.assign(data.profile, presets[presetIndex]);
+					control.refresh();
+				};
+
+				control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						<div class="button-row">
+							<button class="demo-button" onClick="${nextPreset}">Következő állapot</button>
+						</div>
+						<div class="counter-compare">
+							${oRoot.with('.profile', $ => html`
+								<article class="state-card">
+									<h4>Profilkártya</h4>
+									<p><strong>${$.name}</strong> • ${$.role}</p>
+									<p>Hangulat: <span class="pill accent">${$.mood}</span></p>
+								</article>
+							`)}
+							${oRoot.with('.profile', $ => html`
+								<article class="sample-note">
+									<h4>Státusz-sor</h4>
+									<div class="pill-row">
+										<span class="pill">${$.role}</span>
+										<span class="pill accent">${$.mood}</span>
+										<span class="status-pill neutral">pont: ${$.points}</span>
+									</div>
+								</article>
+							`)}
+							${oRoot.with('.profile', $ => html`
+								<article class="counter-box">
+									<h4>Összefoglaló</h4>
+									<p>${$.name} most ${$.mood} módban dolgozik, szerepe: <strong>${$.role}</strong>.</p>
+									<p>Aktív pontszám: <strong>${$.points}</strong></p>
+								</article>
+							`)}
+						</div>
+						<p class="inline-note">Mindhárom blokk ugyanarra a <strong>.profile</strong> objektumra kötött watcher, csak más markupot rajzol.</p>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '9. Több testvér node egy watcherből',
+			description: 'Ez azt mutatja meg, hogy egy watcher több egymás melletti node-ot is visszaadhat, miközben a környező DOM szerkezete stabil marad.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => { data.first.show = !data.first.show; control.refresh(); }}">A/B blokk váltás</button>
+      <button class="demo-button" onClick="\${() => { data.second.value += 1; control.refresh(); }}">Érték +1</button>
+    </div>
+    <div class="pill-row">
+      \${oRoot.with('.first', $ => $.show ? html\`<span class="pill">A</span><span class="pill accent">B</span>\` : html\`\`)}
+      <span class="pill">stabil sibling</span>
+      \${oRoot.with('.second', $ => html\`<span class="pill accent">Érték \${$.value}</span>\`)}
+    </div>
+    <p class="inline-note">A több node-os watcher nem csúsztatja el a mögötte lévő testvéreket.</p>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					first: { show: false },
+					second: { value: 1 }
+				};
+				let control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						<div class="button-row">
+							<button class="demo-button" onClick="${() => { data.first.show = !data.first.show; control.refresh(); }}">A/B blokk váltás</button>
+							<button class="demo-button" onClick="${() => { data.second.value += 1; control.refresh(); }}">Érték +1</button>
+						</div>
+						<div class="pill-row">
+							${oRoot.with('.first', $ => $.show ? html`<span class="pill">A</span><span class="pill accent">B</span>` : html``)}
+							<span class="pill">stabil sibling</span>
+							${oRoot.with('.second', $ => html`<span class="pill accent">Érték ${$.value}</span>`)}
+						</div>
+						<p class="inline-note">A több node-os watcher nem csúsztatja el a mögötte lévő testvéreket.</p>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '10. Üres lista és fix lezáró node',
+			description: 'Itt az üres listából induló eset látszik: az első insert után a lista mögötti fix sibling továbbra is a helyén marad.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => { data.items.splice(0, 0, { title: 'elem ' + data.nextId }); data.nextId += 1; control.refresh(); }}">Első beszúrása</button>
+      <button class="demo-button" onClick="\${() => { if (!data.items.length) return; data.items.splice(0, 1); control.refresh(); }}">Első törlése</button>
+      <button class="demo-button" onClick="\${() => { data.tail.label = data.tail.label === 'fix tail' ? 'lezáró marker' : 'fix tail'; control.refresh(); }}">Tail átnevezés</button>
+    </div>
+    <div class="pill-row">
+      \${oRoot.for('.items', item => html\`<span class="pill">\${item.title}</span>\`)}
+      \${oRoot.with('.tail', $ => html\`<span class="status-pill neutral">\${$.label}</span>\`)}
+    </div>
+    <p class="inline-note">Az üres listába történő első insert után is jó helyen marad a lezáró sibling.</p>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					nextId: 1,
+					items: [],
+					tail: {
+						label: 'fix tail'
+					}
+				};
+				let control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						<div class="button-row">
+							<button class="demo-button" onClick="${() => { data.items.splice(0, 0, { title: 'elem ' + data.nextId }); data.nextId += 1; control.refresh(); }}">Első beszúrása</button>
+							<button class="demo-button" onClick="${() => { if (!data.items.length) return; data.items.splice(0, 1); control.refresh(); }}">Első törlése</button>
+							<button class="demo-button" onClick="${() => { data.tail.label = data.tail.label === 'fix tail' ? 'lezáró marker' : 'fix tail'; control.refresh(); }}">Tail átnevezés</button>
+						</div>
+						<div class="pill-row">
+							${oRoot.for('.items', item => html`<span class="pill">${item.title}</span>`)}
+							${oRoot.with('.tail', $ => html`<span class="status-pill neutral">${$.label}</span>`)}
+						</div>
+						<p class="inline-note">Az üres listába történő első insert után is jó helyen marad a lezáró sibling.</p>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '11. Snapshot és élő adat különbsége',
+			description: 'Ez a példa külön mutatja a root template egyszeri snapshotját és az élő watcherből olvasott értéket.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => {
+        data.metrics.revision += 1; control.refresh(); }
+      }">Revízió +1</button>
+      <button class="demo-button" onClick="\${() => {
+        data.items.push({ title: 'Új sor ' + data.nextId }); data.nextId += 1; control.refresh(); }
+      }">Új sor</button>
+    </div>
+    <table class="demo-table">
+      <thead>
+        <tr><th>Blokk</th><th>Statikus érték</th><th>Élő watcher</th></tr>
+      </thead>
+      <tbody>
+        \${oRoot.for('.items', item => html\`
+          <tr>
+            <td>\${item.title}</td>
+            <td>\${oData.metrics.revision}</td>
+            <td>\${oRoot.with('.metrics', $ => $.revision)}</td>
+          </tr>
+        \`)}
+      </tbody>
+    </table>
+    <p class="inline-note">A középső oszlop a kezdeti root snapshotot mutatja, a jobb szélső minden sorban külön figyeli a .metrics ágat.</p>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					nextId: 3,
+					items: [
+						{ title: 'Hero szekció' },
+						{ title: 'API példák' }
+					],
+					metrics: {
+						revision: 1
+					}
+				};
+				let control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						<div class="button-row">
+							<button class="demo-button" onClick="${() => { data.metrics.revision += 1; control.refresh(); }}">Revízió +1</button>
+							<button class="demo-button" onClick="${() => { data.items.push({ title: 'Új sor ' + data.nextId }); data.nextId += 1; control.refresh(); }}">Új sor</button>
+						</div>
+						<table class="demo-table">
+							<thead>
+								<tr><th>Blokk</th><th>Statikus érték</th><th>Élő watcher</th></tr>
+							</thead>
+							<tbody>
+								${oRoot.for('.items', item => html`
+									<tr>
+										<td>${item.title}</td>
+										<td>${oData.metrics.revision}</td>
+										<td>${oRoot.with('.metrics', $ => $.revision)}</td>
+									</tr>
+								`)}
+							</tbody>
+						</table>
+						<p class="inline-note">A középső oszlop a kezdeti root snapshotot mutatja, a jobb szélső minden sorban külön figyeli a .metrics ágat.</p>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '11.1. A lista renderelése külön függvényben',
+			description: 'Ugyanaz a lista, csak az oRoot.for hívás ki van szervezve egy lokális helperbe, így a template tisztább marad.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => {
+const renderItems = () => oRoot.for('.items', item => html\`
+  <tr>
+    <td>\${item.title}</td>
+    <td>\${oRoot.with('.metrics', $ => $.revision)}</td>
+  </tr>
+\`);
+
+return html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => { 
+        data.items.push({ title: 'Új sor ' }); control.refresh(); }
+      }">Új sor</button>
+      <button class="demo-button" onClick="\${() => { 
+        data.metrics.revision += 1; control.refresh(); }
+      }">Revízió +1</button>
+    </div>
+    <table class="demo-table">
+      <thead>
+        <tr><th>Blokk</th><th>Rev.</th></tr>
+      </thead>
+      <tbody>
+        \${renderItems()}
+      </tbody>
+    </table>
+    <p class="inline-note">A sorok kiszervezett renderelője ugyanazt az oRoot-ot használja, csak a template fő szála marad rövidebb.</p>
+  </div>
+\`;
+});`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					items: [
+						{ title: 'Hero szekció' },
+						{ title: 'API példák' }
+					],
+					metrics: {
+						revision: 1
+					}
+				};
+				let control = synd({ data, container }, (oData, oRoot) => {
+					const renderItems = () => oRoot.for('.items', item => html`
+						<tr>
+							<td>${item.title}</td>
+							<td>${oRoot.with('.metrics', $ => $.revision)}</td>
+						</tr>
+					`);
+
+					return html`
+						<div class="demo-stack">
+							<div class="button-row">
+								<button class="demo-button" onClick="${() => { data.items.push({ title: 'Új sor ' }); control.refresh(); }}">Új sor</button>
+								<button class="demo-button" onClick="${() => { data.metrics.revision += 1; control.refresh(); }}">Revízió +1</button>
+							</div>
+							<table class="demo-table">
+								<thead>
+									<tr><th>Blokk</th><th>Rev.</th></tr>
+								</thead>
+								<tbody>
+									${renderItems()}
+								</tbody>
+							</table>
+							<p class="inline-note">A sorok kiszervezett renderelője ugyanazt az oRoot-ot használja, csak a template fő szála marad rövidebb.</p>
+						</div>
+					`;
+				});
+
+				return { control, data };
+			}
+		},
+		{
+			title: '12. Összetett, többágú minta',
+			description: 'A záró példa egy mini szerkesztőfelület: több adatág, listák, szűrők és feltételes blokkok frissülnek egymás mellett.',
+			code: asCode(`const phases = ['draft', 'review', 'ready'];
+const palette = ['homok', 'tenger', 'terra'];
+let control;
+
+const recompute = () => {
+  data.summary.totalBlocks = data.blocks.length;
+  data.summary.readyCount = data.blocks.filter(block => block.ready).length;
+  data.summary.totalWords = data.blocks.reduce((sum, block) => sum + block.words, 0);
+};
+
+const pushLog = label => {
+  data.log.unshift({ label });
+  data.log.splice(6);
+};
+
+const cyclePhase = () => {
+  const index = phases.indexOf(data.project.phase);
+  data.project.phase = phases[(index + 1) % phases.length];
+  pushLog('Fázis váltás: ' + data.project.phase);
+  control.refresh();
+};
+
+const cycleAccent = () => {
+  const index = palette.indexOf(data.project.accent);
+  data.project.accent = palette[(index + 1) % palette.length];
+  pushLog('Paletta váltás: ' + data.project.accent);
+  control.refresh();
+};
+
+const addBlock = () => {
+  data.blocks.splice(1, 0, {
+    id: data.nextId,
+    title: 'Új szekció ' + data.nextId,
+    words: 110 + data.nextId * 35,
+    ready: false
+  });
+  pushLog('Új blokk beszúrva');
+  data.nextId += 1;
+  recompute();
+  control.refresh();
+};
+
+const exportView = () => {
+  data.counters.exports += 1;
+  pushLog('Export futtatva #' + data.counters.exports);
+  control.refresh();
+};
+
+const bumpRevision = () => {
+  data.counters.revisions += 1;
+  pushLog('Revízió növelve');
+  control.refresh();
+};
+
+const toggleFilter = () => {
+  data.filters.onlyReady = !data.filters.onlyReady;
+  pushLog(data.filters.onlyReady ? 'Szűrő: csak kész blokkok' : 'Szűrő: minden blokk');
+  control.refresh();
+};
+
+const toggleNote = () => {
+  data.project.noteVisible = !data.project.noteVisible;
+  pushLog(data.project.noteVisible ? 'Megjegyzés megjelenítve' : 'Megjegyzés elrejtve');
+  control.refresh();
+};
+
+recompute();
+
+control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="workspace">
+    <div class="workspace-top">
+      \${oRoot.with('.project', $ => html\`
+        <div class="workspace-title">
+          <span class="kicker">összetett synd</span>
+          <h4>\${$.title}</h4>
+          <p>Fázis: <strong>\${$.phase}</strong> • paletta: <strong>\${$.accent}</strong></p>
+        </div>
+      \`)}
+      <div class="button-row">
+        <button class="demo-button" onClick="\${bumpRevision}">Revízió +1</button>
+        <button class="demo-button" onClick="\${exportView}">Export</button>
+        <button class="demo-button" onClick="\${addBlock}">Új blokk</button>
+        <button class="demo-button" onClick="\${toggleFilter}">Szűrő</button>
+        <button class="demo-button" onClick="\${toggleNote}">Jegyzet</button>
+        <button class="demo-button" onClick="\${cyclePhase}">Fázis</button>
+        <button class="demo-button" onClick="\${cycleAccent}">Paletta</button>
+      </div>
+    </div>
+    <div class="metric-grid">
+      \${oRoot.with('.summary', $ => html\`
+        <div class="metric-card"><span class="metric-label">Blokkok</span><strong>\${$.totalBlocks}</strong></div>
+        <div class="metric-card"><span class="metric-label">Kész</span><strong>\${$.readyCount}</strong></div>
+        <div class="metric-card"><span class="metric-label">Szószám</span><strong>\${$.totalWords}</strong></div>
+      \`)}
+      \${oRoot.with('.counters', $ => html\`
+        <div class="metric-card"><span class="metric-label">Revízió</span><strong>\${$.revisions}</strong></div>
+        <div class="metric-card"><span class="metric-label">Export</span><strong>\${$.exports}</strong></div>
+      \`)}
+    </div>
+    <div class="workspace-columns">
+      <div>
+        <h5>Tartalom blokkok</h5>
+        <div class="list-shell">
+          \${oRoot.for('.blocks', block => html\`
+            <div>
+              \${oRoot.with('.filters', $ => $.onlyReady && !block.ready ? null : html\`
+                <article class="list-item">
+                  <div>
+                    <strong>\${block.title}</strong>
+                    <div class="meta-row">
+                      <span>\${block.words} szó</span>
+                      \${block.ready ? html\`<span class="status-pill ready">kész</span>\` : html\`<span class="status-pill waiting">folyamatban</span>\`}
+                      <span class="status-pill neutral">rev \${oRoot.with('.counters', $ => $.revisions)}</span>
+                    </div>
+                  </div>
+                  <div class="button-row">
+                    <button class="demo-button small" onClick="\${() => { block.ready = !block.ready; recompute(); pushLog(block.title + (block.ready ? ' készre állítva' : ' újranyitva')); control.refresh(); }}">Állapot</button>
+                    <button class="demo-button small" onClick="\${() => { const index = data.blocks.indexOf(block); if (index === -1) return; data.blocks.splice(index, 1); recompute(); pushLog(block.title + ' törölve'); control.refresh(); }}">Törlés</button>
+                  </div>
+                </article>
+              \`)}
+            </div>
+          \`)}
+        </div>
+      </div>
+      <div>
+        <h5>Megjegyzés és napló</h5>
+        \${oRoot.with('.project', $ => $.noteVisible ? html\`
+          <div class="note-box">
+            <p>Ebben a példában egyszerre működik objektumfigyelés, tömbfrissítés, feltételes kirajzolás és soronként több globális watcher. A blokkok soraiban a helyi adat, a szűrő és a globális számláló együtt áll össze.</p>
+          </div>
+        \` : null)}
+        <div class="list-shell log-shell">
+          \${oRoot.for('.log', entry => html\`<div class="log-item">\${entry.label}</div>\`)}
+        </div>
+      </div>
+    </div>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const phases = ['draft', 'review', 'ready'];
+				const palette = ['homok', 'tenger', 'terra'];
+				const data = {
+					nextId: 4,
+					project: {
+						title: 'html + synd bemutató oldal',
+						phase: 'draft',
+						accent: 'homok',
+						noteVisible: true
+					},
+					counters: {
+						revisions: 1,
+						exports: 0
+					},
+					filters: {
+						onlyReady: false
+					},
+					summary: {
+						totalBlocks: 0,
+						readyCount: 0,
+						totalWords: 0
+					},
+					blocks: [
+						{ id: 1, title: 'Nyitó címblokk', words: 120, ready: true },
+						{ id: 2, title: 'Használati lépések', words: 260, ready: false },
+						{ id: 3, title: 'Összetett synd minta', words: 420, ready: true }
+					],
+					log: [
+						{ label: 'Projektváz létrehozva' },
+						{ label: 'Első synd watcher felkapcsolva' }
+					]
+				};
+				let control;
+
+				const recompute = () => {
+					data.summary.totalBlocks = data.blocks.length;
+					data.summary.readyCount = data.blocks.filter(block => block.ready).length;
+					data.summary.totalWords = data.blocks.reduce((sum, block) => sum + block.words, 0);
+				};
+
+				const pushLog = label => {
+					data.log.unshift({ label });
+					data.log.splice(6);
+				};
+
+				const cyclePhase = () => {
+					const index = phases.indexOf(data.project.phase);
+					data.project.phase = phases[(index + 1) % phases.length];
+					pushLog('Fázis váltás: ' + data.project.phase);
+					control.refresh();
+				};
+
+				const cycleAccent = () => {
+					const index = palette.indexOf(data.project.accent);
+					data.project.accent = palette[(index + 1) % palette.length];
+					pushLog('Paletta váltás: ' + data.project.accent);
+					control.refresh();
+				};
+
+				const addBlock = () => {
+					data.blocks.splice(1, 0, {
+						id: data.nextId,
+						title: 'Új szekció ' + data.nextId,
+						words: 110 + data.nextId * 35,
+						ready: false
+					});
+					pushLog('Új blokk beszúrva');
+					data.nextId += 1;
+					recompute();
+					control.refresh();
+				};
+
+				const exportView = () => {
+					data.counters.exports += 1;
+					pushLog('Export futtatva #' + data.counters.exports);
+					control.refresh();
+				};
+
+				const bumpRevision = () => {
+					data.counters.revisions += 1;
+					pushLog('Revízió növelve');
+					control.refresh();
+				};
+
+				const toggleFilter = () => {
+					data.filters.onlyReady = !data.filters.onlyReady;
+					pushLog(data.filters.onlyReady ? 'Szűrő: csak kész blokkok' : 'Szűrő: minden blokk');
+					control.refresh();
+				};
+
+				const toggleNote = () => {
+					data.project.noteVisible = !data.project.noteVisible;
+					pushLog(data.project.noteVisible ? 'Megjegyzés megjelenítve' : 'Megjegyzés elrejtve');
+					control.refresh();
+				};
+
+				recompute();
+
+				control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="workspace">
+						<div class="workspace-top">
+							${oRoot.with('.project', $ => html`
+								<div class="workspace-title">
+									<span class="kicker">összetett synd</span>
+									<h4>${$.title}</h4>
+									<p>Fázis: <strong>${$.phase}</strong> • paletta: <strong>${$.accent}</strong></p>
+								</div>
+							`)}
+							<div class="button-row">
+								<button class="demo-button" onClick="${bumpRevision}">Revízió +1</button>
+								<button class="demo-button" onClick="${exportView}">Export</button>
+								<button class="demo-button" onClick="${addBlock}">Új blokk</button>
+								<button class="demo-button" onClick="${toggleFilter}">Szűrő</button>
+								<button class="demo-button" onClick="${toggleNote}">Jegyzet</button>
+								<button class="demo-button" onClick="${cyclePhase}">Fázis</button>
+								<button class="demo-button" onClick="${cycleAccent}">Paletta</button>
+							</div>
+						</div>
+						<div class="metric-grid">
+							${oRoot.with('.summary', $ => html`
+								<div class="metric-card"><span class="metric-label">Blokkok</span><strong>${$.totalBlocks}</strong></div>
+								<div class="metric-card"><span class="metric-label">Kész</span><strong>${$.readyCount}</strong></div>
+								<div class="metric-card"><span class="metric-label">Szószám</span><strong>${$.totalWords}</strong></div>
+							`)}
+							${oRoot.with('.counters', $ => html`
+								<div class="metric-card"><span class="metric-label">Revízió</span><strong>${$.revisions}</strong></div>
+								<div class="metric-card"><span class="metric-label">Export</span><strong>${$.exports}</strong></div>
+							`)}
+						</div>
+						<div class="workspace-columns">
+							<div>
+								<h5>Tartalom blokkok</h5>
+								<div class="list-shell">
+									${oRoot.for('.blocks', block => html`
+										<div>${oRoot.with('.filters', $ => $.onlyReady && !block.ready ? null : html`
+											<article class="list-item">
+												<div>
+													<strong>${block.title}</strong>
+													<div class="meta-row">
+														<span>${block.words} szó</span>
+														${block.ready ? html`<span class="status-pill ready">kész</span>` : html`<span class="status-pill waiting">megy</span>`}
+														<span class="status-pill neutral">rev ${oRoot.with('.counters', $ => $.revisions)}</span>
+													</div>
+												</div>
+												<div class="button-row">
+													<button class="demo-button small" onClick="${() => { block.ready = !block.ready; recompute(); pushLog(block.title + (block.ready ? ' készre állítva' : ' újranyitva')); control.refresh(); }}">Állapot</button>
+													<button class="demo-button small" onClick="${() => { const index = data.blocks.indexOf(block); if (index === -1) return; data.blocks.splice(index, 1); recompute(); pushLog(block.title + ' törölve'); control.refresh(); }}">Törlés</button>
+												</div>
+											</article>
+										`)}</div>
+									`)}
+								</div>
+							</div>
+							<div>
+								<h5>Megjegyzés és napló</h5>
+								${oRoot.with('.project', $ => $.noteVisible ? html`
+									<div class="note-box">
+										<p>Ebben a példában egyszerre működik objektumfigyelés, tömbfrissítés, feltételes kirajzolás és soronként több globális watcher. A blokkok soraiban a helyi adat, a szűrő és a globális számláló együtt áll össze.</p>
+									</div>
+								` : null)}
+								<div class="list-shell log-shell">
+									${oRoot.for('.log', entry => html`<div class="log-item">${entry.label}</div>`)}
+								</div>
+							</div>
+						</div>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '13. Hibás minta',
+			description: 'A záró példa egy mini szerkesztőfelület: több adatág, listák, szűrők és feltételes blokkok frissülnek egymás mellett.',
+			code: asCode(''),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					filters: {
+						onlyReady: false
+					},
+					blocks: [
+						{ id: 1, title: 'Nyitó címblokk', words: 120, ready: true },
+						{ id: 2, title: 'Használati lépések', words: 260, ready: false },
+						{ id: 3, title: 'Összetett synd minta', words: 420, ready: true }
+					]
+				};
+				let control;
+
+				const toggleFilter = () => {
+					data.filters.onlyReady = !data.filters.onlyReady;
+					control.refresh();
+				};
+
+				control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="workspace">
+						<button class="demo-button" onClick="${toggleFilter}">Szűrő</button>
+						<div class="list-shell">
+							${oRoot.for('.blocks', block => html`<div>
+								${oRoot.with('.filters', $ => $.onlyReady && !block.ready ? null : html`
+									<article class="list-item">${block.title} / ${block.ready}</article>
+								`)}</div>
+							`)}
+						</div>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		}
+	]
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+	const page = createEl('main', 'page')
+	document.body.append(page)
+
+	page.append(html`
+		<section class="hero">
+			<div>
+				<span class="kicker">html + synd</span>
+				<h1>Interaktív bevezető a html és a synd API-hoz.</h1>
+				<p>A bal oldalon mindig a kód látszik, jobb oldalon a futó eredmény. A html DOM-ot épít, a synd ugyanezt élő adathoz köti.</p>
+			</div>
+		</section>
+	`)
+
+	const htmlSection = createEl('section', 'section-block');
+	htmlSection.append(createSectionHead('1. A html: DOM építés template stringből', 'Ezek a példák azt mutatják meg, hogyan készít valódi DOM node-okat a html, milyen értékeket lehet behelyettesíteni, és hogyan kezeli az eseményeket vagy a natív HTML sajátosságait.'))
+	renderExamples(htmlSection, getHtmlExamples())
+	page.append(htmlSection)
+
+	const syndSection = createEl('section', 'section-block')
+	syndSection.append(createSectionHead('2. A synd: a html élő, adatvezérelt párja', 'Itt már ugyanaz a template nem csak felépül, hanem egy data objektum változásaira célzottan frissül is. A példák az egyszerű objektumtól a bonyolultabb listákig haladnak.'))
+	syndSection.append(createSyndIntroBlock())
+	renderExamples(syndSection, getSyndExamples())
+	page.append(syndSection)
+	page.append(createApiSummarySection())
+})
+
+	</script>
+</head>
+
+<body>
+</body>
+
+</html>

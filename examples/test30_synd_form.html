@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>React alternative test</title>
+	<link rel="shortcut icon" href="#" />
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<style>
+
+table { border-collapse: collapse; border: 1px solid silver; margin: 0.5rem }
+td { border: 1px solid silver }
+
+	</style>
+	<script type="module">
+import { html, svg, synd } from '../deploy/synd.mjs';
+const clamp100 = value => Math.max(0, Math.min(100, Number(value) || 0));
+const pieRadius = 50;
+const pieCircumference = 2 * Math.PI * pieRadius;
+
+const data = {
+	forms: {
+		form1: {
+			value1: 'one',
+			value2: 'two',
+			select: 1
+		},
+		form2: {
+			title: 'AAA',
+			_title: '',
+			name: 'aaa',
+			_name: '',
+		}
+	},
+	grid: [
+		['0.0', '0.1'],
+		['1.0', '1.1'],
+	],
+	chart: {
+		value: 42,
+	},
+}
+
+const oPage = synd({ data, container: document.body }, (_, root) => html`
+	<div>
+		<div>
+			<input value="${root.with('.forms.form1', $ => $.value1)}" onInput="${e => root.set('.forms.form1.value1', e)}"/><br/>
+			<input value="${root.with('.forms.form1', $ => $.value2)}" onInput="${e => root.set('.forms.form1.value2', e)}"/><br/>
+			<b>${root.with('.forms.form1', $ => $.value1)}</b><br/>
+			<b>${root.with('.forms.form1', $ => $.value2)}</b><br/>
+			<input value="${root.with('.forms.form1', $ => $.value1)}" onInput="${e => root.set('.forms.form1.value1', e)}"/><br/>
+			<button onClick="${e => e.target.closest('div').querySelectorAll('input,b').forEach((o, i) => o.style ? o.style.color = ['red', 'green'][i % 2] : null)}">Color</button>
+		</div>
+		<br/>
+		<hr/>
+		<br/>
+		<select psValue="${root.with('.forms.form1', $ => $.select)}" onChange="${e => root.set('.forms.form1.select', e.target.value |0)}">${
+			['Zero', 'One', 'Two', 'Three'].map((s, i) => html`<option value="${i}">${s}</option>`)
+		}</select><br/>
+		<b>${root.with('.forms.form1', $ => $.select)}</b><br/>
+		<button onClick="${() => root.set('.forms.form1.select', (data.forms.form1.select +1) % 4)}">Cycle select</button>
+		<br/>
+		<hr/>
+
+		<br/>
+		<div>
+			<table>${
+				root.for('.grid', (_, row) => html`<tr>${
+					row.for(($, cell) => html`<td><input style="background:transparent; color: inherit; border: none" 
+						value="${$}" onChange="${cell.set}"/></td>`)
+				}</tr>`)
+			}</table><br/>
+			<button onClick="${() => { data.grid.push(data.grid[0].map((_, i) => `${data.grid.length}.${i}`)); root.refresh(); }}">Add row</button>
+			<button onClick="${() => { data.grid.pop(); root.refresh(); }}">Del row</button>
+			<button onClick="${() => { data.grid.forEach((a, i) => a.push(`${i}.${a.length}`)); root.refresh(); }}">Add col</button>
+			<button onClick="${() => { data.grid.forEach((a, i) => a.pop()); root.refresh(); }}">Del col</button>
+			<button onClick="${() => console.dir(data.grid)}">Log</button>
+			<button onClick="${e => e.target.closest('div').querySelectorAll('td').forEach(o => o.style.color = 'red')}">Color</button>
+		</div>
+		<br/>
+		<hr/>
+
+		<br/>
+		<div>
+			<label>
+				Pie chart: <input type="text" inputMode="numeric" pattern="\\d{1,3}" maxlength="3" value="${root.with('.chart', $ => $.value)}" onInput="${e => root.set('.chart.value', e)}" />
+			</label>
+			<div style="width: 180px; margin-top: 0.75rem">
+				${svg`<svg viewBox="0 0 120 120" width="180" height="180" role="img" aria-label="Pie chart">
+					<circle cx="60" cy="60" r="50" fill="none" stroke="#e5e7eb" stroke-width="18"></circle>
+					<circle cx="60" cy="60" r="50" fill="none" stroke="#2563eb" stroke-width="18" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="${
+						root.with('.chart', $ => `${(clamp100($.value) / 100) *pieCircumference} ${pieCircumference}`)}"></circle>
+					<text x="60" y="60" text-anchor="middle" dominant-baseline="middle" style="font: 700 16px sans-serif; fill: #111827">${
+						root.with('.chart', $ => `${clamp100($.value)}%`)}</text>
+				</svg>`}
+			</div>
+		</div>
+		<br/>
+		<hr/>
+	</div>
+`);
+
+	</script>
+</head>
+
+<body>
+</body>
+
+</html>

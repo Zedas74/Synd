@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>React alternative test</title>
+	<link rel="shortcut icon" href="#" />
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<style>
+
+table { border-collapse: collapse; border: 1px solid silver; margin: 0.5rem }
+td { border: 1px solid silver }
+
+	</style>
+	<script type="module">
+import { html, synd } from '../deploy/synd.mjs';
+document.addEventListener('DOMContentLoaded', () => {
+	const data = {
+		items: [
+			{ title: 'one', value: 1 },
+			{ title: 'two', value: 2 },
+			{ title: 'three', value: 3 }
+		],
+		counters: {
+			first: 1,
+			second: {
+				value: 2
+			}
+		}
+	}
+
+	const oPage = synd({ data, container: document.body }, (oData, oRoot) => html`
+		<div>
+			<button onClick="${e => { data.counters.first++; oPage.refresh(); }}">Increase 1</button>
+			<button onClick="${e => { data.counters.second.value++; oPage.refresh(); }}">Increase 2</button><br/><br/>
+			<button onClick="${e => { 
+				const iPos = Math.random() *data.items.length |0;
+				data.items.splice(iPos, 0, { title: 'new → ' +iPos, value: data.counters.first }); 
+				oPage.refresh(); 
+			}}">Append</button>
+			<button onClick="${e => { data.items.splice(0, 1); oPage.refresh(); }}">Delete</button><br/><br/>
+			<button onClick="${e => document.querySelectorAll('tr').forEach(o => o.style.color = 'green')}">Green!</button>
+		</div>
+	 	<div>${
+			oRoot.with('.counters', $ => html`<b>${$.first}</b>`)
+		}<br/>${
+			oRoot.with('.counters.second', $ => html`<i>${$.value}</i>`)
+		}<br/>${
+			oRoot.with('.counters', ($, oCnt) => html`<span style="color:red"><b>${$.first}</b> - ${
+				oCnt.with('.second', $ => html`<i>${$.value}</i>`)
+			}</span>`)
+		}<br/></div>
+		<table>
+			<!-- start -->
+			${
+			oRoot.for('.items', oItem => 
+				html`<tr><td>${oItem.title}</td><td>${oItem.value}</td><td>, 
+					static: <u>${oData.counters.second.value}</u>, 
+					live: <u>${oRoot.with('.counters.second', $ => $.value)}</u>
+				</td></tr>`)
+			}
+			<!-- end -->
+		</table>
+	`);
+
+});
+
+	</script>
+</head>
+
+<body>
+</body>
+
+</html>
