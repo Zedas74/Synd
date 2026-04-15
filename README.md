@@ -1,4 +1,4 @@
-# HTML, SVG and SYND
+# HTML and SYND
 
 The synd() function and the html\`\` template string were created to make rendering data-based HTML pages in browsers easier and simpler.
 
