@@ -1,8 +1,34 @@
 # HTML, SVG and SYND
 
-## What are html\`\` and svg\`\` for?
+The synd() function and the html\`\` template string were created to make rendering data-based HTML pages in browsers easier and simpler.
 
-A long-standing problem has been that producing HTML with events from JavaScript can only be done in two ways. Either we create the elements ourselves with DOM manipulation methods, or we use string-based HTML and add the events afterward:
+(If you do not know what a template string is, [here is the explanation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals))
+
+## How do I use it?
+
+Simply download [deploy/synd.mjs](https://github.com/Zedas74/Synd/blob/main/deploy/synd.mjs) (only 19KB), then import it into any page:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <script type="module">
+
+    import { html, synd } from './js/synd.mjs';
+    …
+
+  </script>
+  </head>
+  <body>
+  </body>
+</html>
+```
+
+## Okay, but what exactly is html\`\` for?
+
+A long-standing problem is that producing DOM with events from JavaScript can only be done in two ways: either we create the elements ourselves with DOM-manipulation methods, or we use string-based HTML and add the events afterward (for now, let us ignore the classic "onclick" and similar events, because they cause countless problems and nobody recommends using them).
+
+**DOM creation looks roughly like this:**
 ```js
 const msg = 'Alert!';
 
@@ -10,48 +36,50 @@ const msg = 'Alert!';
 const button = document.createElement('button');
 button.className = 'demo-button';
 button.textContent = 'Alert';
-documement.body.append(button);
+document.body.append(button);
 
 // Add the event
 button.addEventListener('click', () =>
   input.value = alert(msg);
 );
 ```
-Or:
+**The string-based version looks like this:**
 ```js
 const msg = 'Alert!';
 
 // Create an HTML button
-documement.body.innerHTML = '<button class="demo-button">Alert</button>';
+document.body.innerHTML = '<button class="demo-button">Alert</button>';
 
 // Add the event
-const button = documement.body.querySelector('.demo-button');
+const button = document.body.querySelector('.demo-button');
 button.addEventListener('click', () =>
   input.value = alert(msg);
 );
 ```
-Of course, there are simpler solutions, but they either have to be translated, or they are extremely cumbersome to use. HTML, on the other hand, offers a very simple way to mix HTML text and events:
+There are of course simpler solutions, but they either have to be translated or are extremely cumbersome to use.
+
+**In contrast, html\`\` offers a very simple, fast and runtime-friendly way to mix HTML text and events:**
 ```js
 const msg = 'Alert!';
 document.body.append(html`<button class="demo-button" onClick="${() => alert(msg)}">Alert</button>`);
 ```
-Any event can be inserted this way; the important thing is that its name must start with `on` and an uppercase letter. So `onClick` inserts a `click` event.
+Any event can be inserted this way; the key is that its name must start with `on` and an uppercase letter. So `onClick` inserts a `click` event.
 
-Attributes and text content can also be inserted:
+Naturally, attributes and text content can also be inserted:
 ```js
 const text = 'Alert', className = 'demo-button';
 document.body.append(html`<button class="${className}">${text}</button>`);
 ```
-The html\`\` function returns a DocumentFragment, which can be inserted.
+The html\`\` function returns a DocumentFragment, which can be inserted, so similar elements can be nested inside each other:
 ```js
 const text = 'Alert', className = 'demo-button';
 document.body.append(html`<button class="${className}">${html`<b>${text}</b>`}</button>`);
 ```
-It is also important that you do not mix static and dynamic pieces inside an attribute. This is bad:
+Important that you do not mix static and dynamic pieces inside an attribute. This is bad:
 ```js
 html`<button class="class_${name}"/>`
 ```
-This is fine:
+This is already good:
 ```js
 html`<button class="${'class_' +name}"/>`
 ```
@@ -60,7 +88,7 @@ The DOM produced by the html\`\` function can have multiple roots:
 ```js
 html`<i>A</i><b>B</b>`;
 ```
-There are also attributes that are much better set after the children have been created. A good example is `value` on a select. It is applied during parsing before the `option`s exist, so it has no effect. Here, `psValue` means that the attribute is actually only written at the `</select>`, so the `select` is correctly set to the intended value.
+There are attributes that are much better set after the children have been created. A good example is `value` on a select. It is applied during parsing before the `option`s exist, so it has no effect. Here, `psValue` means that the attribute is actually only written at the `</select>`, so the `select` is correctly set to the intended value.
 ```js
 html`<select psValue="2">
   <option value="1">One</option>
@@ -68,14 +96,16 @@ html`<select psValue="2">
 </select>`;
 ```
 
-It is also useful to know that when you put a function inside html\`\`, it always receives the current parent DOM element:
+It is also worth knowing that if we put a function into the html\`\` code part, it always receives the current parent DOM element:
 ```js
 let div;
 html`<div>${parent => div = parent}</div>`);
 ```
-If the function returns something other than `null` or `undefined`, that value is inserted into the output.
+If the function's return value is not `null` or `undefined`, then it is inserted into the output.
 
-The svg\`\` is another version of html\`\`, needed because SVG has its own special namespace.
+The html\`\` function also accepts value-less attributes, such as `selected`, and HTML comments.
+
+The html\`\` function also has an alternative version (imported from the same place): **svg\`\`**. It does the same thing, but uses the SVG namespace for every element.
 
 ## What is synd() for?
 

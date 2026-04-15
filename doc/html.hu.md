@@ -1,12 +1,34 @@
-# HTML, SVG and SYND
+# HTML és SYND
+
+A synd() függvény és a html\`\` template string azért születtek, hogy megkönnyítsék és leegyszerűsítsék az adat alapú HTML oldalak renderelését a böngészőkben.
+
+(Ha nem tudod mi az a template string, [itt a leírás](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals))
 
 ## Hogyan tudom használni?
 
+Egyszerűen töltsd le a [deploy/synd.mjs](https://github.com/Zedas74/Synd/blob/main/deploy/synd.mjs)-t (csak 19KB), majd importáld egy tetszőleges oldalra:
 
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <script type="module">
 
-## Mire való a html\`\` és az svg\`\`?
+    import { html, synd } from './js/synd.mjs';
+    …
 
-Régi probléma, hogy JavaScriptből eventekkel ellátott HTML-t előállítani csak kétféle módon lehet: vagy mi hozzuk létre az elemeket, DOM manipuláló metódusokkal, vagy string alapú HTML-t használunk, és utólag adjuk hozzá az eventeket:
+  </script>
+  </head>
+  <body>
+  </body>
+</html>
+```
+
+## Jó, de mire is való pontosan a html\`\`?
+
+Régi probléma, hogy JavaScriptből eventekkel ellátott DOM-ot előállítani csak kétféle módon lehet: vagy mi hozzuk létre az elemeket, DOM manipuláló metódusokkal, vagy string alapú HTML-t használunk, és utólag adjuk hozzá az eventeket (a klasszikus "onclick" és hasonló eventektől most tekintsünk el, mert azokkal számtalan probléma van, és senki sem javasolja a használatukat).
+
+**A DOM kreáció nagyjából így néz ki:**
 ```js
 const msg = 'Alert!';
 
@@ -21,7 +43,7 @@ button.addEventListener('click', () =>
   input.value = alert(msg);
 );
 ```
-Avagy:
+**A stringes pedig így:**
 ```js
 const msg = 'Alert!';
 
@@ -34,24 +56,26 @@ button.addEventListener('click', () =>
   input.value = alert(msg);
 );
 ```
-Léteznek persze egyszerűbb megoldások, de ezeket vagy le kell fordítani, vagy borzasztó körülményes a használatuk. A HTML viszont egy rendkívül egyszerű, gyors és runtime használható módot kínál a html szöveg és eventek keverésére:
+Léteznek persze egyszerűbb megoldások, de ezeket vagy le kell fordítani, vagy borzasztó körülményes a használatuk. 
+
+**A html\`\` ezekkel szemben egy rendkívül egyszerű, gyors és runtime használható módot kínál a html szöveg és eventek keverésére:**
 ```js
 const msg = 'Alert!';
 document.body.append(html`<button class="demo-button" onClick="${() => alert(msg)}">Alert</button>`);
 ```
 Bármilyen eventet be lehet így szúrni, a lényeg, hogy 'on'-nal és nagybetűvel kell kezdődni a nevüknek. Tehát az `onClick` egy `click` eventet szúr be.
 
-Attribútumokat és szöveges tartalmat is be lehet szúrni:
+Nyilván attribútumokat és szöveges tartalmat is be lehet szúrni:
 ```js
 const text = 'Alert', className = 'demo-button';
 document.body.append(html`<button class="${className}">${text}</button>`);
 ```
-A html\`\` DocumentFragment-et ad vissza, amely beszúrható.
+A html\`\` DocumentFragment-et ad vissza, amely beszúrható, tehát a hasonló elemek egymásba ágyazhatók:
 ```js
 const text = 'Alert', className = 'demo-button';
 document.body.append(html`<button class="${className}">${html`<b>${text}</b>`}</button>`);
 ```
-Fontos, hogy az attributumokban nem szabad statikus és dinamikus elemeket keverni, tehát ez rossz:
+Fontos, hogy az attribútumokban nem szabad statikus és dinamikus elemeket keverni, tehát ez rossz:
 ```js
 html`<button class="class_${name}"/>`
 ```
@@ -64,7 +88,7 @@ A html\`\` függvény által előállított DOM-nak több gyökere is lehet:
 ```js
 html`<i>A</i><b>B</b>`;
 ```
-Lehetnek olyan attribútumok, amelyeket sokkal jobb a gyermekek létrehozása után beállítani, ilyen például a selectnél a `value`. Ez előbb állítódik be a parszoláskor, mint ahogy az `option`-ok létrejönnének, ezért nincs hatása. Itt viszont a `psValue` azt csinálja, hogy az attribútum valójában csak a `</select>`-nél íródik be, így a `select` jól beáll a megfelelő értékre.
+Lehetnek olyan attribútumok, amelyeket sokkal jobb a gyermekek létrehozása után beállítani, ilyen például a selectnél a `value`. Ez normál esetben előbb állítódik be HTML parszoláskor, mint ahogy az `option`-ok létrejönnének, ezért nincs hatása. Itt viszont a `psValue` azt csinálja, hogy az attribútum valójában csak a `</select>`-nél íródik be, így a `select` jól beáll a megfelelő értékre.
 ```js
 html`<select psValue="2">
   <option value="1">One</option>
@@ -79,7 +103,9 @@ html`<div>${parent => div = parent}</div>`);
 ```
 Amúgy ilyenkor ha a függvény visszatérési értéke nem `null` vagy `undefined`, akkor az kerül be az outputba.
 
-Az svg\`\` a html\`\` egy másik verziója, amelyre az SVG különleges namespace-e miatt van szükség.
+A html\`\` elfogad érték nélküli attribútumokat is (pl. `selected`), és HTML kommenteket is.
+
+A html\`\`-nek létezik egy alternatív verziója is (ugyanonnan importálható): az **svg\`\`**. Ez ugyanazt tudja, de minden elemhez az SVG namespace-t használja.
 
 ## Mire való a synd()?
 
@@ -114,7 +140,7 @@ A synd() egy függvény, amely egy `data` és egy `container` objektumot, valami
 
 **Mire jó a `with`?**
 
-A `with` a `data` egy részére (a példában a `.counter` belső objektumról van szó) futtat egy belső template függvényt, amit a with helyére illeszt be a synd. Emellett a háttérben létrehoz egy élő linket az adat és a DOM között, így ha az adat `with` által felügyelt részén belül módosítunk valamit (akármilyen mélyen), akkor a template által leírt rész frissül a DOM-ban (**és csak az**).
+A `with` a `data` egy részére (a példában a `.counter` belső objektumról van szó) futtat egy belső template függvényt, amit a with helyére illeszt be a synd. Emellett a háttérben létrehoz egy élő linket az adat és a DOM között, így ha az adat `with` által felügyelt részén belül módosítunk valamit (akármilyen mélyen), akkor a template által leírt rész (**és csak az**) frissül a DOM-ban.
 
 A példában a gomb megnyomásával a `data.counter.value` mező értékét növeljük, majd megkérjük az egész synd-et, hogy frissítse magát. A synd ezután kitalálja, hogy melyik `with`-en belüli template rész érintett, és csak azt a részt építi újra.
 
@@ -140,8 +166,14 @@ const oPage = synd({ data, container: document.body }, (_, root) => html`
           value="${$}" onChange="${cell.set}"/></td>`)
       }</tr>`)
     }</table><br/>
-    <button onClick="${() => { data.grid.push(data.grid[0].map((_, i) => `${data.grid.length}.${i}`)); root.refresh(); }}">Add row</button>
-    <button onClick="${() => { data.grid.forEach((a, i) => a.push(`${i}.${a.length}`)); root.refresh(); }}">Add col</button>
+    <button onClick="${() => { 
+      data.grid.push(data.grid[0].map((_, i) => `${data.grid.length}.${i}`)); 
+      root.refresh(); 
+    }}">Add row</button>
+    <button onClick="${() => { 
+      data.grid.forEach((a, i) => a.push(`${i}.${a.length}`));
+      root.refresh(); 
+    }}">Add col</button>
   </div>`);
 ```
 

@@ -12,7 +12,9 @@ td { border: 1px solid silver }
 
 	</style>
 	<script type="module">
-import { html, svg, synd } from '../deploy/synd.mjs';
+
+import { html, svg, synd } from './00/js/synd.mjs';
+
 const clamp100 = value => Math.max(0, Math.min(100, Number(value) || 0));
 const pieRadius = 50;
 const pieCircumference = 2 * Math.PI * pieRadius;
