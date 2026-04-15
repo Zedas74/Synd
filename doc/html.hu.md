@@ -1,5 +1,9 @@
 # HTML, SVG and SYND
 
+## Hogyan tudom használni?
+
+
+
 ## Mire való a html\`\` és az svg\`\`?
 
 Régi probléma, hogy JavaScriptből eventekkel ellátott HTML-t előállítani csak kétféle módon lehet: vagy mi hozzuk létre az elemeket, DOM manipuláló metódusokkal, vagy string alapú HTML-t használunk, és utólag adjuk hozzá az eventeket:

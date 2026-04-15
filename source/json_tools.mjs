@@ -47,10 +47,10 @@ class JSONPath extends Array {
 }
 
 /**
- * JavaScript-szerű útvonal alapján értéket olvas ki objektumból/tömbből.
- * A path lehet string vagy JSONPath; JSONPath esetén nem történik újraparszolás.
- * Támogatott szintaxis stringnél: `.prop`, `[7]`, `["x.y"]`, `['x y']`, kombinálva.
- * Ha bármely köztes szint hiányzik vagy nem objektum/tömb, `undefined`-ot ad vissza.
+ * Reads a value from an object or array using a JavaScript-like path.
+ * The path may be a string or a JSONPath; JSONPath values are not reparsed.
+ * Supported string syntax: `.prop`, `[7]`, `["x.y"]`, `['x y']`, and combinations thereof.
+ * If any intermediate level is missing or not an object/array, returns `undefined`.
  * @param {any} target
  * @param {string|JSONPath} path
  * @returns {any}
@@ -102,7 +102,7 @@ function diffDeep(a, b) {
 
         const aPath = extendPath(aParentPath, xKey);
 
-        // Tömb teszt
+        // Array test
         if (Array.isArray(a)) {
             const omEqualPairs = new Map();
             const getPairKey = (iA, iB) => `${iA}|${iB}`;
@@ -164,16 +164,16 @@ function diffDeep(a, b) {
             return;
         }
 
-        // Objektum teszt
+        // Object test
         const osAKeys = new Set(Object.keys(a));
         const osBKeys = new Set(Object.keys(b));
         osAKeys.intersection(osBKeys).forEach(s => {
             if (!osLocalVisited.has(a[s]))
                 diff(aPath, s, a[s], b[s], aCollector, osLocalVisited);
         });
-        // A régiben van, de az újban nincs -> jelentés: a szülő úton, 'rem', kulcs
+        // Present in the old value, but not in the new one -> report: parent path, 'rem', key
         osAKeys.difference(osBKeys).forEach(s => aCollector.push([aPath, 'rem', s, undefined]));
-        // Az újban van, de a régiben nincs -> jelentés: a szülő úton, 'set', kulcs, új érték
+        // Present in the new value, but not in the old one -> report: parent path, 'set', key, new value
         osBKeys.difference(osAKeys).forEach(s => aCollector.push([aPath, 'set', s, b[s]]));
     }
 
@@ -189,9 +189,9 @@ diffDeep.typeOf = o => {
 
 /**
  * @template T
- * Mélyen összefésüli a forrás objektumokat a targetbe.
- * Objektumoknál rekurzívan merge-el, egyéb típusoknál felülír.
- * Tömböknél index-alapon ír felül (a target hossza nem csökken automatikusan).
+ * Deeply merges source objects into the target.
+ * Objects are merged recursively; other types are overwritten.
+ * Arrays are overwritten by index (the target length does not shrink automatically).
  * @param {T} target
  * @param {...any} sources
  * @returns {T}
@@ -216,9 +216,9 @@ mergeDeep.merge = (target, source) => {
 
 /**
  * @template T
- * Mélyen rákényszeríti a targetet a source struktúrájára.
- * A forrásban nem szereplő kulcsokat törli a targetből.
- * Tömböknél a cél tömb hosszát is a forráséhoz igazítja.
+ * Deeply forces the target to match the source structure.
+ * Deletes keys that do not exist in the source from the target.
+ * For arrays, also adjusts the target length to match the source.
  * @param {T} target
  * @param {...any} sources
  * @returns {T}
@@ -247,9 +247,9 @@ forceDeep.merge = (target, source) => {
 };
 
 /**
- * Mélyen kitakarítja az üres objektumokat/tömböket egy objektumfából.
- * `true`-t ad vissza, ha a bemenet teljesen kiüríthető;
- * `false`-t, ha maradt benne legalább egy nem törölhető érték.
+ * Deeply removes empty objects/arrays from an object tree.
+ * Returns `true` if the input can be fully emptied;
+ * returns `false` if at least one non-removable value remains.
  * @param {any} o
  * @returns {boolean}
  */
@@ -278,9 +278,9 @@ function cleanDeep(o) {
 }
 
 /**
- * Mély kulcs-átalakítás objektumokon.
- * A mapper `[kulcs, érték]` párost kap, és vagy új párt ad vissza,
- * vagy falsy értékkel eldobja az adott kulcsot.
+ * Deep key transformation for objects.
+ * The mapper receives a `[key, value]` pair and either returns a new pair,
+ * or drops the key by returning a falsy value.
  * @template T
  * @param {T} source
  * @param {(entry:[string, any]) => [string, any] | null | undefined | false} fKeyMapper
@@ -298,10 +298,10 @@ function mapDeep(source, fKeyMapper) {
 }
 
 /**
- * JavaScript-szerű útvonal alapján értéket állít be objektumban/tömbben.
- * A path lehet string vagy JSONPath; JSONPath esetén nem történik újraparszolás.
- * Támogatott szintaxis stringnél: `.prop`, `[7]`, `["x.y"]`, `['x y']`, kombinálva.
- * Hiányzó köztes szinteket létrehozza (`{}` vagy `[]` a következő token szerint).
+ * Sets a value in an object or array using a JavaScript-like path.
+ * The path may be a string or a JSONPath; JSONPath values are not reparsed.
+ * Supported string syntax: `.prop`, `[7]`, `["x.y"]`, `['x y']`, and combinations thereof.
+ * Missing intermediate levels are created (`{}` or `[]` according to the next token).
  * @template T
  * @param {T} target
  * @param {string|JSONPath} sPath
@@ -340,9 +340,9 @@ function setByPath(target, sPath, value) {
 }
 
 /**
- * Mély egyenlőségvizsgálat primitívekre, tömbökre és objektumokra.
- * Ciklikus hivatkozás esetén a már bejárt bal oldali referencia-ágat
- * újra nem bontja tovább, hanem referencia-szinten hasonlít.
+ * Deep equality check for primitives, arrays, and objects.
+ * For cyclic references, the already visited left-hand reference branch
+ * is not expanded again; comparison happens at the reference level.
  * @param {any} a
  * @param {any} b
  * @param {Set<any>} [osVisited]
@@ -360,7 +360,7 @@ function equalDeep(a, b, osVisited = new Set()) {
     if (Array.isArray(a) && Array.isArray(b)) {
         if (a.length !== b.length) return false;
         for (let i = 0; i < a.length; i++)
-            if (osVisited.has(a[i])) { // Ha rekurzió lenne, nem megy bele az objektumokba
+            if (osVisited.has(a[i])) { // If this would recurse, do not descend into the objects
                 if (a[i] !== b[i])
                     return false;
             } else if (!equalDeep(a[i], b[i], osVisited)) return false;
@@ -389,8 +389,8 @@ function equalDeep(a, b, osVisited = new Set()) {
 }
 
 /**
- * Megkeresi azokat az objektum- vagy tömbreferenciákat, amelyek több,
- * nem ciklikus útvonalon is elérhetők ugyanabban az adatfában.
+ * Finds object or array references that are reachable by multiple
+ * non-cyclic paths within the same data tree.
  * @param {any} target
  * @returns {{firstPath: JSONPath, duplicatePath: JSONPath}[]}
  */
@@ -430,8 +430,8 @@ function findReferenceRedundancies(target) {
 }
 
 /**
- * Hibát dob, ha az adatfában ugyanaz az objektum több, nem ciklikus
- * útvonalon is szerepel.
+ * Throws an error if the same object appears on multiple non-cyclic
+ * paths in the data tree.
  * @param {any} target
  * @param {string} [sLabel='data']
  */
@@ -449,8 +449,8 @@ function assertNoReferenceRedundancies(target, sLabel = 'data') {
 }
 
 /**
- * Ráalkalmazza a diffDeep diff-listát az input állapotra, és visszaadja az új rootot.
- * Objektum/array rootnál helyben módosít, root-szintű `val` esetén új rootot ad vissza.
+ * Applies the diffDeep diff list to the input state and returns the new root.
+ * For object/array roots it mutates in place; for root-level `val` it returns a new root.
  * @param {any} target
  * @param {DiffEntry[]} aDiffs
  * @returns {any}

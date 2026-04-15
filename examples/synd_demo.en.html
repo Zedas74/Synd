@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>html + synd demo</title>
+	<link rel="shortcut icon" href="#" />
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<link rel="stylesheet" href="./synd_demo.css" />
+	<script type="module">
+import { html, synd } from '../deploy/synd.mjs';
+const asCode = (...parts) => highlightMixedCode(parts.join('\n'));
+
+const escapeHTML = text => text
+	.replace(/&/g, '&amp;')
+	.replace(/</g, '&lt;')
+	.replace(/>/g, '&gt;')
+	.replace(/"/g, '&quot;')
+
+function highlightMarkup(source) {
+	return source.replace(/&lt;(\/)?([A-Za-z][\w:-]*)([\s\S]*?)&gt;/g, (match, slash, tagName, rawAttrs) => {
+		let trailingSlash = ''
+		let attrs = rawAttrs
+
+		attrs = attrs.replace(/(\s*)\/$/, (_, whitespace) => {
+			trailingSlash = `${whitespace}<span class="tok-punct">/</span>`
+			return ''
+		})
+
+		const highlightedAttrs = attrs.replace(/(\s+)([^\s=\/]+)(?:=(&quot;.*?&quot;|'.*?'|[^\s]+))?/g, (_, whitespace, attrName, attrValue) => {
+			const renderedValue = attrValue
+				? `<span class="tok-punct">=</span><span class="tok-string">${attrValue}</span>`
+				: ''
+			return `${whitespace}<span class="tok-attr">${attrName}</span>${renderedValue}`
+		})
+
+		return `<span class="tok-punct">&lt;${slash ?? ''}</span><span class="tok-tag">${tagName}</span>${highlightedAttrs}${trailingSlash}<span class="tok-punct">&gt;</span>`
+	})
+}
+
+function highlightMixedCode(source) {
+	return highlightJsFragment(source)
+}
+
+function highlightJsFragment(source) {
+	let result = ''
+	let plainStart = 0
+	let index = 0
+
+	const flushPlain = end => {
+		if (end > plainStart)
+			result += highlightJsPlain(source.slice(plainStart, end))
+	}
+
+	while (index < source.length) {
+		if (source.startsWith('//', index)) {
+			flushPlain(index)
+			const end = findLineCommentEnd(source, index)
+			result += `<span class="tok-comment">${escapeHTML(source.slice(index, end))}</span>`
+			index = end
+			plainStart = end
+			continue
+		}
+
+		if (source.startsWith('/*', index)) {
+			flushPlain(index)
+			const end = findBlockCommentEnd(source, index)
+			result += `<span class="tok-comment">${escapeHTML(source.slice(index, end))}</span>`
+			index = end
+			plainStart = end
+			continue
+		}
+
+		if (source[index] === '\'' || source[index] === '"') {
+			flushPlain(index)
+			const end = findStringEnd(source, index, source[index])
+			result += `<span class="tok-string">${escapeHTML(source.slice(index, end))}</span>`
+			index = end
+			plainStart = end
+			continue
+		}
+
+		if (source[index] === '`') {
+			flushPlain(index)
+			const template = highlightTemplateLiteral(source, index)
+			result += template.html
+			index = template.nextIndex
+			plainStart = template.nextIndex
+			continue
+		}
+
+		index += 1
+	}
+
+	flushPlain(source.length)
+	return result
+}
+
+function highlightJsPlain(source) {
+	const tokenPattern = /\b(const|let|var|function|return|if|else|for|of|in|new|true|false|null|undefined)\b|\b(html|synd|document)\b|\b\d+(?:\.\d+)?\b|=>|===|!==|==|!=|<=|>=|\+\+|--|\|\||&&|\.\.\.|[=+\-*\/%<>!?:;.,()[\]{}]/g
+	let result = ''
+	let lastIndex = 0
+
+	for (const match of source.matchAll(tokenPattern)) {
+		result += escapeHTML(source.slice(lastIndex, match.index))
+
+		if (match[1])
+			result += `<span class="tok-keyword">${match[1]}</span>`
+		else if (match[2])
+			result += `<span class="tok-builtin">${match[2]}</span>`
+		else if (/^\d/.test(match[0]))
+			result += `<span class="tok-number">${match[0]}</span>`
+		else
+			result += `<span class="tok-punct">${escapeHTML(match[0])}</span>`
+
+		lastIndex = match.index + match[0].length
+	}
+
+	result += escapeHTML(source.slice(lastIndex))
+	return result
+}
+
+function highlightTemplateLiteral(source, startIndex) {
+	let result = '<span class="tok-template-delim">`</span>'
+	let index = startIndex + 1
+	let chunkStart = index
+
+	while (index < source.length) {
+		if (source[index] === '\\') {
+			index += 2
+			continue
+		}
+
+		if (source[index] === '`') {
+			result += highlightTemplateChunk(source.slice(chunkStart, index))
+			result += '<span class="tok-template-delim">`</span>'
+			return { html: result, nextIndex: index + 1 }
+		}
+
+		if (source[index] === '$' && source[index + 1] === '{') {
+			result += highlightTemplateChunk(source.slice(chunkStart, index))
+			const end = findInterpolationEnd(source, index + 2)
+			result += `<span class="tok-template-expr">\${</span>${highlightJsFragment(source.slice(index + 2, end))}<span class="tok-template-expr">}</span>`
+			index = end + 1
+			chunkStart = index
+			continue
+		}
+
+		index += 1
+	}
+
+	result += highlightTemplateChunk(source.slice(chunkStart))
+	return { html: result, nextIndex: source.length }
+}
+
+function highlightTemplateChunk(source) {
+	if (!source)
+		return ''
+		
+	return `<span class="tok-template">${highlightMarkup(escapeHTML(source))}</span>`
+}
+
+function findLineCommentEnd(source, startIndex) {
+	let index = startIndex
+	while (index < source.length && source[index] !== '\n')
+		index += 1
+	return index
+}
+
+function findBlockCommentEnd(source, startIndex) {
+	const end = source.indexOf('*/', startIndex + 2)
+	return end === -1 ? source.length : end + 2
+}
+
+function findStringEnd(source, startIndex, quote) {
+	let index = startIndex + 1
+	while (index < source.length) {
+		if (source[index] === '\\') {
+			index += 2
+			continue
+		}
+		if (source[index] === quote)
+			return index + 1
+		index += 1
+	}
+	return source.length
+}
+
+function findInterpolationEnd(source, startIndex) {
+	let depth = 1
+	let index = startIndex
+
+	while (index < source.length) {
+		if (source.startsWith('//', index)) {
+			index = findLineCommentEnd(source, index)
+			continue
+		}
+
+		if (source.startsWith('/*', index)) {
+			index = findBlockCommentEnd(source, index)
+			continue
+		}
+
+		if (source[index] === '\'' || source[index] === '"') {
+			index = findStringEnd(source, index, source[index])
+			continue
+		}
+
+		if (source[index] === '`') {
+			index = skipTemplateLiteral(source, index)
+			continue
+		}
+
+		if (source[index] === '{')
+			depth += 1
+		else if (source[index] === '}') {
+			depth -= 1
+			if (depth === 0)
+				return index
+		}
+
+		index += 1
+	}
+
+	return source.length
+}
+
+function skipTemplateLiteral(source, startIndex) {
+	let index = startIndex + 1
+
+	while (index < source.length) {
+		if (source[index] === '\\') {
+			index += 2
+			continue
+		}
+
+		if (source[index] === '`')
+			return index + 1
+
+		if (source[index] === '$' && source[index + 1] === '{') {
+			index = findInterpolationEnd(source, index + 2) + 1
+			continue
+		}
+
+		index += 1
+	}
+
+	return source.length
+}
+
+function highlightCode(source, language = 'js') {
+	return source;
+}
+
+function highlightJSON(source) {
+	return escapeHTML(source)
+		.replace(/^(\s*)"([^"]+)":/gm, '$1<span class="tok-json-key">"$2"</span><span class="tok-punct">:</span>')
+		.replace(/: ("(?:\\.|[^"])*")/g, ': <span class="tok-json-string">$1</span>')
+		.replace(/\b(-?\d+(?:\.\d+)?)\b/g, '<span class="tok-json-number">$1</span>')
+		.replace(/\b(true|false|null)\b/g, '<span class="tok-json-literal">$1</span>')
+		.replace(/([{}\[\],])/g, '<span class="tok-punct">$1</span>')
+}
+
+function createEl(tag, className, text) {
+	const element = document.createElement(tag)
+	if (className)
+		element.className = className
+	if (text !== undefined)
+		element.textContent = text
+	return element
+}
+
+function createSectionHead(title, text) {
+	const head = createEl('div', 'section-head')
+	head.append(createEl('h2', '', title), createEl('p', '', text))
+	return head
+}
+
+function createPanel(title) {
+	const panel = createEl('div', 'demo-panel')
+	panel.append(createEl('div', 'panel-title', title))
+	const body = createEl('div', 'panel-body')
+	panel.append(body)
+	return { panel, body }
+}
+
+function createCodeBlock({ source, language = 'js', label }) {
+	const shell = createEl('div', 'code-sample')
+	const caption = createEl('div', 'code-caption')
+	caption.append(createEl('strong', '', label || (language === 'html' ? 'HTML sample' : 'JS sample')), createEl('span', 'code-lang', language))
+
+	const pre = createEl('pre', 'code-block')
+	const code = createEl('code')
+	code.className = 'language-' + language
+	code.innerHTML = highlightCode(source, language)
+	pre.append(code)
+	return shell.append(caption, pre), shell
+}
+
+function createSyndIntroBlock() {
+	return html`
+		<article class="synd-intro">
+			<h3>Why do we need synd alongside html?</h3>
+			<p>The <strong>html</strong> function alone builds DOM from a template string. If the data changes later, you have to decide which part to rerender. <strong>synd</strong> adds a light data-watching layer: it binds DOM fragments to certain branches of <strong>data</strong> and, after refresh, only recalculates those fragments.</p>
+			<ul>
+				<li><strong>with(path, tpl)</strong> watches an object or sub-object branch and only refreshes the matching DOM fragment.</li>
+				<li><strong>for(path, tpl)</strong> creates watched DOM fragments for each list item, so the structure stays stable after inserts and deletes.</li>
+				<li>The expandable data block shows the current state of the running <strong>data</strong> object in each example, so you can immediately see what the view reacts to.</li>
+			</ul>
+		</article>
+	`
+}
+
+function createJSONViewer(data, title = 'Live JSON data ↓') {
+	const details = createEl('details', 'json-viewer')
+	const summary = createEl('summary', '', title)
+	const body = createEl('div', 'json-viewer-body')
+	body.append(createEl('p', '', 'This block shows the current data object of the running example. It updates after every refresh.'))
+	const pre = createEl('pre', 'json-block')
+	body.append(pre)
+	details.append(summary, body)
+
+	const render = () => {
+		const source = JSON.stringify(data, null, 2)
+		const sourceLines = source.split('\n')
+		const nextLines = [
+			`const data = ${sourceLines[0]}`,
+			...sourceLines.slice(1, -1),
+			`${sourceLines[sourceLines.length - 1]};`
+		]
+		pre.innerHTML = nextLines.map((line, index) => {
+			return `<span class="json-line">${highlightLiveDataLine(line, index, nextLines.length)}</span>`
+		}).join('')
+	}
+
+	render()
+	return { details, render }
+}
+
+function createCounterVariantCard(title, note) {
+	const card = createEl('article', 'counter-variant')
+	card.append(createEl('div', 'counter-variant-head', title), createEl('p', 'counter-variant-note', note))
+	const body = createEl('div', 'counter-variant-body')
+	card.append(body)
+	return { card, body }
+}
+
+function highlightLiveDataLine(line, index, totalLines) {
+	if (index === 0 || index === totalLines - 1)
+		return highlightMixedCode(line)
+	return highlightJSON(line)
+}
+
+function mountDemoCard(container, example) {
+	const card = createEl('article', 'demo-card')
+	card.append(createEl('h3', '', example.title), createEl('p', '', example.description))
+
+	if (example.inlinePairs) {
+		const pairedRoot = createEl('div', 'counter-pair-stack')
+		for (const pair of example.inlinePairs) {
+			const row = createEl('div', 'counter-pair')
+			row.append(createCodeBlock(pair.codeBlock))
+
+			const livePanel = createEl('div', 'counter-variant')
+			livePanel.append(createEl('div', 'counter-variant-head', pair.label), createEl('p', 'counter-variant-note', pair.note))
+			const liveBody = createEl('div', 'counter-variant-body')
+			livePanel.append(liveBody)
+
+			pair.render(liveBody)
+			row.append(livePanel)
+			pairedRoot.append(row)
+		}
+		card.append(pairedRoot)
+		container.append(card)
+		return
+	}
+
+	const grid = createEl('div', 'demo-grid')
+	const codePanel = createPanel('Code sample')
+	const livePanel = createPanel('Live result')
+	const liveRoot = createEl('div', 'demo-live')
+	const codeStack = createEl('div', 'code-stack')
+	const codeBlocks = example.codeBlocks ?? [{ source: example.code, language: example.language ?? 'js' }]
+
+	codeBlocks.forEach(block => codeStack.append(createCodeBlock(block)))
+	codePanel.body.append(codeStack)
+	livePanel.body.append(liveRoot)
+	grid.append(codePanel.panel, livePanel.panel)
+	card.append(grid)
+	container.append(card)
+
+	const result = example.render ? example.render(liveRoot) : undefined
+
+	if (result?.data) {
+		const inspector = createJSONViewer(result.data, example.jsonTitle)
+		if (example.liveDataBeforeCode)
+			codePanel.body.prepend(inspector.details)
+		else
+			codePanel.body.append(inspector.details)
+		if (result.control?.refresh) {
+			const originalRefresh = result.control.refresh.bind(result.control)
+			result.control.refresh = (...args) => {
+				const refreshResult = originalRefresh(...args)
+				inspector.render()
+				return refreshResult
+			}
+		}
+	}
+}
+
+function renderExamples(container, examples) {
+	examples.forEach(example => mountDemoCard(container, example))
+}
+
+function createApiSummarySection() {
+	const section = createEl('section', 'section-block')
+	section.append(createSectionHead('Quick API Map', 'If you are meeting these two functions for the first time, this is the best place to start: html builds DOM first, then synd makes the same structure refreshable from live data.'))
+
+	const grid = createEl('div', 'api-grid')
+	const cards = [
+		{
+			title: 'html template',
+			signature: 'html`...`',
+			text: 'Creates real DOM nodes directly from a template literal, with no build step.',
+			bullets: [
+				'Text, Node, arrays, or callback return values can all be interpolated.',
+				'You can pass a function directly to onClick-style attributes.',
+				'The syntax stays close to native HTML, including comments and boolean attributes.'
+			]
+		},
+		{
+			title: 'html with extra parameters',
+			signature: 'html(a, b)`...`',
+			text: 'Template callbacks can receive extra arguments if you want to pass through external context.',
+			bullets: [
+				'The callback receives the parent node as its first argument, followed by the extra arguments.',
+				'Synd uses the same pattern when it binds a scope API and parent container to the template.',
+				'Advanced, but also useful for your own helper callbacks.'
+			]
+		},
+		{
+			title: 'synd root',
+			signature: 'synd({ data, container }, template)',
+			text: 'Binds a refreshable view to the data object and renders the root DOM into the specified container.',
+			bullets: [
+				'The template receives the current oData snapshot and the oRoot watcher API.',
+				'After a data change, refresh() triggers the targeted re-render.',
+				'It does not rerender the full page, only the watched parts.'
+			]
+		},
+		{
+			title: 'with and for',
+			signature: 'oRoot.with(path, tpl) / oRoot.for(path, tpl)',
+			text: 'These are the two most important building blocks: one works on an object branch, the other on a list.',
+			bullets: [
+				'with watches a specific object branch and binds a view to it.',
+				'for creates a separately refreshable DOM fragment for each list item.',
+				'With the local scope received from the callback, you can continue to deeper branches as well.'
+			]
+		},
+		{
+			title: 'refresh and diff',
+			signature: 'control.refresh()',
+			text: 'Refresh decides which view fragments to update based on the difference between the previous and current data state.',
+			bullets: [
+				'It also reacts to object changes, inserts, deletes, and removes.',
+				'Most demo examples use manual refresh so the behavior is easy to see.',
+				'If needed, a separate diff list can also be passed for advanced usage.'
+			]
+		},
+		{
+			title: 'when html is enough',
+			signature: 'html + manual render()',
+			text: 'If you only want to build markup, or you have very little interaction, html by itself is a good choice.',
+			bullets: [
+				'Convenient for simple component-like blocks and previews.',
+				'For small states, a custom render() function may be enough.',
+				'The first part of the demo shows this foundation.'
+			]
+		},
+		{
+			title: 'when synd is needed',
+			signature: 'watchers + refresh()',
+			text: 'Synd becomes truly useful when multiple data branches, conditions, and dynamic lists move together.',
+			bullets: [
+				'It is especially useful when embedded objects and arrays coexist.',
+				'The workspace example already shows several watchers working together.',
+				'The special examples also demonstrate indexing and sibling cases separately.'
+			]
+		}
+	]
+
+	for (const cardData of cards) {
+		const card = createEl('article', 'api-card')
+		const list = createEl('ul')
+		for (const bullet of cardData.bullets) {
+			const item = createEl('li', '', bullet)
+			list.append(item)
+		}
+		card.append(createEl('h3', '', cardData.title))
+		card.append(createEl('div', 'api-signature', cardData.signature))
+		card.append(createEl('p', '', cardData.text))
+		card.append(list)
+		grid.append(card)
+	}
+
+	section.append(grid)
+	return section
+}
+
+function getHtmlExamples() {
+	return [
+		{
+			title: '1. Building DOM from a template string',
+			description: 'The simplest pattern: html immediately creates real DOM nodes from a template string.',
+			code: asCode(`const view = html\`
+  <article class="sample-note">
+    <h4>Hello html</h4>
+    <p>A real DOM tree is created from the template literal.</p>
+    <small>There is no virtual DOM and no separate compile step.</small>
+  </article>\`;
+
+container.append(view);`),
+			render: container => {
+				const view = html`
+  <article class="sample-note">
+    <h4>Hello html</h4>
+    <p>A real DOM tree is created from the template literal.</p>
+    <small>There is no virtual DOM and no separate compile step.</small>
+  </article>`;
+				container.append(view);
+			}
+		},
+		{
+			title: '2. Arrays and adjacent nodes',
+			description: 'Interpolation can yield more than one value; it can also yield multiple nodes. No separate wrapper element is needed.',
+			code: asCode(`const tags = ['title', 'description', 'code', 'output'];
+const view = html\`
+  <div class="pill-row">
+    \${tags.map(tag => html\`<span class="pill">\${tag}</span>\`)}
+  </div>\`;
+
+container.append(view);`),
+			render: container => {
+				const tags = ['title', 'description', 'code', 'output'];
+				const view = html`
+  <div class="pill-row">
+    ${tags.map(tag => html`<span class="pill">${tag}</span>`)}
+  </div>`;
+				container.append(view);
+			}
+		},
+		{
+			title: '3. With an event handler function',
+			description: 'You can place the event handler directly in the attribute. This example still refreshes the view manually.',
+			code: asCode(`const data = { clicks: 0 };
+const render = () => container.replaceChildren(html\`
+  <div class="counter-box">
+    <p>Clicks: <strong>\${data.clicks}</strong></p>
+    <button class="demo-button" onClick="\${e => {
+      data.clicks += 1; 
+      render(); 
+    }}">+1</button>
+  </div>\`);
+render();`),
+  			render: container => {
+const data = { clicks: 0 };
+const render = () => container.replaceChildren(html`
+  <div class="counter-box">
+    <p>Clicks: <strong>${data.clicks}</strong></p>
+    <button class="demo-button" onClick="${e => {
+      data.clicks += 1; 
+      render(); 
+    }}">+1</button>
+  </div>`);
+render();
+			}
+		},
+		{
+			title: '4. Comments and boolean attributes',
+			description: 'The html parser handles comments and attributes without a separate value, such as open or disabled.',
+			code: asCode(`const view = html\`
+  <div class="sample-note demo-stack">
+    <h4>Comment + boolean attribute</h4>
+    <p>The parser handles HTML comments and standalone attributes such as <strong>open</strong> or <strong>disabled</strong>.</p>
+    <details open>
+      <summary>Expandable section</summary>
+      <!-- This comment appears only in DOM -->
+      <p>The markup stays close to native HTML.</p>
+    </details>
+    <div class="button-row">
+      <button disabled>disabled</button>
+      <button>active</button>
+    </div>
+  </div>
+\`;
+
+container.append(view);`),
+			render: container => {
+				const view = html`
+					<div class="sample-note demo-stack">
+						<h4>Comment + boolean attribute</h4>
+						<p>The parser handles HTML comments and standalone attributes such as <strong>open</strong> or <strong>disabled</strong>.</p>
+						<details open>
+							<summary>Expandable section</summary>
+							<!-- This comment appears only in DOM -->
+							<p>The markup stays close to native HTML.</p>
+						</details>
+						<div class="button-row">
+							<button disabled>disabled</button>
+							<button>active</button>
+						</div>
+					</div>
+				`;
+
+				container.append(view);
+			}
+		},
+		{
+			title: '5. Extra parameters for callbacks',
+			description: 'The interpolated callback receives the parent node and can also get extra arguments. It is less common, but a powerful pattern.',
+			code: asCode(`const view = html(1, 2)\`<div>\${
+  (oParent, ...data) => {
+    oParent.style.color = 'green';
+    return data.map(i => html\`<b>\${i}</b>, \`);
+  }
+}</div>\`;
+
+container.append(view);`),
+			render: container => {
+				const view = html(1, 2)`<div>${(oParent, ...data) => {
+					oParent.style.color = 'green';
+					return data.map(i => html`<b>${i}</b>, `);
+				}}</div>`;
+				container.append(view);
+			}
+		}
+	]
+}
+
+function getSyndExamples() {
+	return [
+		{
+			title: '5. Watched object with with',
+			description: 'The simplest synd pattern: changes to the .profile branch only refresh the associated DOM fragment.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    \${oRoot.with('.profile', $ => html\`
+      <div class="state-card">
+        <h4>\${$.name}</h4>
+        <p>Version: <strong>\${$.version}</strong></p>
+        <p>Mood: <span class="pill accent">\${$.mood}</span></p>
+      </div>
+    \`)}
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => { 
+        data.profile.version += 1; 
+        control.refresh(); }
+      }">Version +1</button>
+      <button class="demo-button" onClick="\${() => { 
+        data.profile.mood = data.profile.mood === 'calm' ? 
+          'fast' : 'calm'; 
+        control.refresh(); 
+      }}">Change mood</button>
+    </div>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					profile: {
+						name: 'Synd object',
+						version: 1,
+						mood: 'calm'
+					}
+				};
+				let control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						${oRoot.with('.profile', $ => html`
+							<div class="state-card">
+								<h4>${$.name}</h4>
+								<p>Version: <strong>${$.version}</strong></p>
+								<p>Mood: <span class="pill accent">${$.mood}</span></p>
+							</div>
+						`)}
+						<div class="button-row">
+							<button class="demo-button" onClick="${() => { data.profile.version += 1; control.refresh(); }}">Version +1</button>
+							<button class="demo-button" onClick="${() => { data.profile.mood = data.profile.mood === 'calm' ? 'fast' : 'calm'; control.refresh(); }}">Change mood</button>
+						</div>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '6. Conditional DOM with a watcher',
+			description: 'The same watcher can return DOM or null, so conditional rendering works without a separate state machine.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => { data.panel.open = !data.panel.open; control.refresh(); }}">Toggle panel</button>
+    </div>
+    \${oRoot.with('.panel', $ => $.open ? html\`
+      <div class="disclosure">
+        <h4>\${$.title}</h4>
+        <p>\${$.text}</p>
+      </div>
+    \` : null)}
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					panel: {
+						open: false,
+						title: 'The watcher only renders when needed',
+						text: 'Returning null or false yields an empty fragment, so you get conditional DOM without any special tricks.'
+					}
+				};
+
+				let control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						<div class="button-row">
+							<button class="demo-button" onClick="${() => { data.panel.open = !data.panel.open; control.refresh(); }}">Toggle panel</button>
+						</div>
+						${oRoot.with('.panel', $ => $.open ? html`
+							<div class="disclosure">
+								<h4>${$.title}</h4>
+								<p>${$.text}</p>
+							</div>
+						` : null)}
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '7. List watching with for',
+			description: 'for builds a watched row for each list item, so you do not need to rerender the whole list after inserts and deletes.',
+			code: asCode(`let control;
+
+const addItem = () => {
+  data.items.splice(1, 0, { label: 'New block ' + data.nextId, minutes: data.nextId + 1 });
+  data.nextId += 1;
+  control.refresh();
+};
+
+const removeFirst = () => {
+  if (!data.items.length)
+    return;
+  data.items.splice(0, 1);
+  control.refresh();
+};
+
+control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${addItem}">Insert in the middle</button>
+      <button class="demo-button" onClick="\${removeFirst}">Remove first</button>
+    </div>
+    <ul class="demo-list">
+      \${oRoot.for('.items', item => html\`<li><strong>\${item.label}</strong> • \${item.minutes} perc</li>\`)}
+    </ul>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					nextId: 4,
+					items: [
+						{ label: 'Title', minutes: 2 },
+						{ label: 'Description', minutes: 4 },
+						{ label: 'Code + output', minutes: 6 }
+					]
+				};
+				let control;
+
+				const addItem = () => {
+					data.items.splice(1, 0, { label: 'New block ' + data.nextId, minutes: data.nextId + 1 });
+					data.nextId += 1;
+					control.refresh();
+				};
+
+				const removeFirst = () => {
+					if (!data.items.length)
+						return;
+					data.items.splice(0, 1);
+					control.refresh();
+				};
+
+				control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						<div class="button-row">
+							<button class="demo-button" onClick="${addItem}">Insert in the middle</button>
+							<button class="demo-button" onClick="${removeFirst}">Remove first</button>
+						</div>
+						<ul class="demo-list">
+							${oRoot.for('.items', item => html`<li><strong>${item.label}</strong> • ${item.minutes} perc</li>`)}
+						</ul>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '8. Deeper branches with a local scope',
+			description: 'The second parameter of the with callback is a local scope. It lets you move into deeper branches without rewriting the full path every time.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    \${oRoot.with('.counters', ($, scope) => html\`
+      <div class="state-card">
+        <h4>Inherited scope API</h4>
+        <p>First counter: <strong>\${$.first}</strong></p>
+        <p>Second branch: \${
+          scope.with('.second', inner => 
+            html\`<span class="pill accent">\${inner.label}: \${inner.value}</span>\`)
+        }</p>
+      </div>
+    \`)}
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => { 
+        data.counters.first += 1;
+        control.refresh();
+      }}">First +1</button>
+      <button class="demo-button" onClick="\${() => {
+        data.counters.second.value += 1;
+        control.refresh(); 
+      }}">Second +1</button>
+    </div>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					counters: {
+						first: 1,
+						second: {
+							label: 'deep branch',
+							value: 2
+						}
+					}
+				};
+				let control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						${oRoot.with('.counters', ($, scope) => html`
+							<div class="state-card">
+								<h4>Inherited scope API</h4>
+								<p>First counter: <strong>${$.first}</strong></p>
+								<p>Second branch: ${scope.with('.second', inner => html`<span class="pill accent">${inner.label}: ${inner.value}</span>`)}</p>
+							</div>
+						`)}
+						<div class="button-row">
+							<button class="demo-button" onClick="${() => { data.counters.first += 1; control.refresh(); }}">First +1</button>
+							<button class="demo-button" onClick="${() => { data.counters.second.value += 1; control.refresh(); }}">Second +1</button>
+						</div>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '8.1. The same object in three with views',
+			description: 'The same .profile branch is shown by three different watchers: as a card, in a status row, and in a short summary sentence. The button writes the same data, so all three views change together.',
+			code: asCode(`const presets = [
+  { name: 'Anna', role: 'editor', mood: 'focus', points: 12 },
+  { name: 'Bela', role: 'proofreader', mood: 'review', points: 18 },
+  { name: 'Csilla', role: 'publisher', mood: 'approval', points: 27 }
+];
+
+let presetIndex = 0;
+let control;
+
+const nextPreset = () => {
+  presetIndex = (presetIndex + 1) % presets.length;
+  Object.assign(data.profile, presets[presetIndex]);
+  control.refresh();
+};
+
+control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${nextPreset}">Next state</button>
+    </div>
+    <div class="counter-compare">
+      \${oRoot.with('.profile', $ => html\`
+        <article class="state-card">
+          <h4>Profile card</h4>
+          <p><strong>\${$.name}</strong> • \${$.role}</p>
+          <p>Mood: <span class="pill accent">\${$.mood}</span></p>
+        </article>
+      \`)}
+      \${oRoot.with('.profile', $ => html\`
+        <article class="sample-note">
+          <h4>Status row</h4>
+          <div class="pill-row">
+            <span class="pill">\${$.role}</span>
+            <span class="pill accent">\${$.mood}</span>
+            <span class="status-pill neutral">pont: \${$.points}</span>
+          </div>
+        </article>
+      \`)}
+      \${oRoot.with('.profile', $ => html\`
+        <article class="counter-box">
+          <h4>Summary</h4>
+          <p>\${$.name} now working in \${$.mood} mode, role: <strong>\${$.role}</strong>.</p>
+          <p>Active score: <strong>\${$.points}</strong></p>
+        </article>
+      \`)}
+    </div>
+    <p class="inline-note">All three blocks are watchers bound to the same <strong>.profile</strong> object; they just render different markup.</p>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const presets = [
+					{ name: 'Anna', role: 'editor', mood: 'focus', points: 12 },
+					{ name: 'Bela', role: 'proofreader', mood: 'review', points: 18 },
+					{ name: 'Csilla', role: 'publisher', mood: 'approval', points: 27 }
+				];
+				const data = {
+					profile: { ...presets[0] }
+				};
+				let presetIndex = 0;
+				let control;
+
+				const nextPreset = () => {
+					presetIndex = (presetIndex + 1) % presets.length;
+					Object.assign(data.profile, presets[presetIndex]);
+					control.refresh();
+				};
+
+				control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						<div class="button-row">
+							<button class="demo-button" onClick="${nextPreset}">Next state</button>
+						</div>
+						<div class="counter-compare">
+							${oRoot.with('.profile', $ => html`
+								<article class="state-card">
+									<h4>Profile card</h4>
+									<p><strong>${$.name}</strong> • ${$.role}</p>
+									<p>Mood: <span class="pill accent">${$.mood}</span></p>
+								</article>
+							`)}
+							${oRoot.with('.profile', $ => html`
+								<article class="sample-note">
+									<h4>Status row</h4>
+									<div class="pill-row">
+										<span class="pill">${$.role}</span>
+										<span class="pill accent">${$.mood}</span>
+										<span class="status-pill neutral">pont: ${$.points}</span>
+									</div>
+								</article>
+							`)}
+							${oRoot.with('.profile', $ => html`
+								<article class="counter-box">
+									<h4>Summary</h4>
+									<p>${$.name} now working in ${$.mood} mode, role: <strong>${$.role}</strong>.</p>
+									<p>Active score: <strong>${$.points}</strong></p>
+								</article>
+							`)}
+						</div>
+						<p class="inline-note">All three blocks are watchers bound to the same <strong>.profile</strong> object; they just render different markup.</p>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '9. Multiple sibling nodes from one watcher',
+			description: 'This shows that a watcher can return multiple adjacent nodes while the surrounding DOM structure stays stable.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => { data.first.show = !data.first.show; control.refresh(); }}">Toggle A/B block</button>
+      <button class="demo-button" onClick="\${() => { data.second.value += 1; control.refresh(); }}">Value +1</button>
+    </div>
+    <div class="pill-row">
+      \${oRoot.with('.first', $ => $.show ? html\`<span class="pill">A</span><span class="pill accent">B</span>\` : html\`\`)}
+      <span class="pill">stabil sibling</span>
+      \${oRoot.with('.second', $ => html\`<span class="pill accent">Value \${$.value}</span>\`)}
+    </div>
+    <p class="inline-note">A multi-node watcher does not shift the sibling nodes behind it.</p>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					first: { show: false },
+					second: { value: 1 }
+				};
+				let control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						<div class="button-row">
+							<button class="demo-button" onClick="${() => { data.first.show = !data.first.show; control.refresh(); }}">Toggle A/B block</button>
+							<button class="demo-button" onClick="${() => { data.second.value += 1; control.refresh(); }}">Value +1</button>
+						</div>
+						<div class="pill-row">
+							${oRoot.with('.first', $ => $.show ? html`<span class="pill">A</span><span class="pill accent">B</span>` : html``)}
+							<span class="pill">stabil sibling</span>
+							${oRoot.with('.second', $ => html`<span class="pill accent">Value ${$.value}</span>`)}
+						</div>
+						<p class="inline-note">A multi-node watcher does not shift the sibling nodes behind it.</p>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '10. Empty list and fixed closing node',
+			description: 'This shows the empty-list case: after the first insert, the fixed sibling behind the list still stays in place.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => { data.items.splice(0, 0, { title: 'elem ' + data.nextId }); data.nextId += 1; control.refresh(); }}">Insert first item</button>
+      <button class="demo-button" onClick="\${() => { if (!data.items.length) return; data.items.splice(0, 1); control.refresh(); }}">Remove first</button>
+	<button class="demo-button" onClick="\${() => { data.tail.label = data.tail.label === 'fix tail' ? 'closing marker' : 'fix tail'; control.refresh(); }}">Rename tail</button>
+    </div>
+    <div class="pill-row">
+      \${oRoot.for('.items', item => html\`<span class="pill">\${item.title}</span>\`)}
+      \${oRoot.with('.tail', $ => html\`<span class="status-pill neutral">\${$.label}</span>\`)}
+    </div>
+    <p class="inline-note">Even after the first insert into an empty list, the closing sibling stays in the right place.</p>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					nextId: 1,
+					items: [],
+					tail: {
+						label: 'fix tail'
+					}
+				};
+				let control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						<div class="button-row">
+							<button class="demo-button" onClick="${() => { data.items.splice(0, 0, { title: 'elem ' + data.nextId }); data.nextId += 1; control.refresh(); }}">Insert first item</button>
+							<button class="demo-button" onClick="${() => { if (!data.items.length) return; data.items.splice(0, 1); control.refresh(); }}">Remove first</button>
+							<button class="demo-button" onClick="${() => { data.tail.label = data.tail.label === 'fix tail' ? 'closing marker' : 'fix tail'; control.refresh(); }}">Rename tail</button>
+						</div>
+						<div class="pill-row">
+							${oRoot.for('.items', item => html`<span class="pill">${item.title}</span>`)}
+							${oRoot.with('.tail', $ => html`<span class="status-pill neutral">${$.label}</span>`)}
+						</div>
+						<p class="inline-note">Even after the first insert into an empty list, the closing sibling stays in the right place.</p>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '11. Difference between snapshot and live data',
+			description: 'This example shows the root template snapshot and the value read from the live watcher separately.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => {
+        data.metrics.revision += 1; control.refresh(); }
+      }">Revision +1</button>
+      <button class="demo-button" onClick="\${() => {
+        data.items.push({ title: 'New row ' + data.nextId }); data.nextId += 1; control.refresh(); }
+      }">New row</button>
+    </div>
+    <table class="demo-table">
+      <thead>
+        <tr><th>Block</th><th>Static value</th><th>Live watcher</th></tr>
+      </thead>
+      <tbody>
+        \${oRoot.for('.items', item => html\`
+          <tr>
+            <td>\${item.title}</td>
+            <td>\${oData.metrics.revision}</td>
+            <td>\${oRoot.with('.metrics', $ => $.revision)}</td>
+          </tr>
+        \`)}
+      </tbody>
+    </table>
+    <p class="inline-note">The middle column shows the initial root snapshot, while the rightmost column watches the .metrics branch separately in each row.</p>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					nextId: 3,
+					items: [
+						{ title: 'Hero section' },
+						{ title: 'API examples' }
+					],
+					metrics: {
+						revision: 1
+					}
+				};
+				let control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="demo-stack">
+						<div class="button-row">
+							<button class="demo-button" onClick="${() => { data.metrics.revision += 1; control.refresh(); }}">Revision +1</button>
+							<button class="demo-button" onClick="${() => { data.items.push({ title: 'New row ' + data.nextId }); data.nextId += 1; control.refresh(); }}">New row</button>
+						</div>
+						<table class="demo-table">
+							<thead>
+								<tr><th>Block</th><th>Static value</th><th>Live watcher</th></tr>
+							</thead>
+							<tbody>
+								${oRoot.for('.items', item => html`
+									<tr>
+										<td>${item.title}</td>
+										<td>${oData.metrics.revision}</td>
+										<td>${oRoot.with('.metrics', $ => $.revision)}</td>
+									</tr>
+								`)}
+							</tbody>
+						</table>
+						<p class="inline-note">The middle column shows the initial root snapshot, while the rightmost column watches the .metrics branch separately in each row.</p>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		},
+		{
+			title: '11.1. Rendering the list in a separate function',
+			description: 'The same list, but the oRoot.for call is moved into a local helper, so the template stays cleaner.',
+			code: asCode(`let control = synd({ data, container }, (oData, oRoot) => {
+const renderItems = () => oRoot.for('.items', item => html\`
+  <tr>
+    <td>\${item.title}</td>
+    <td>\${oRoot.with('.metrics', $ => $.revision)}</td>
+  </tr>
+\`);
+
+return html\`
+  <div class="demo-stack">
+    <div class="button-row">
+      <button class="demo-button" onClick="\${() => { 
+        data.items.push({ title: 'New row ' }); control.refresh(); }
+      }">New row</button>
+      <button class="demo-button" onClick="\${() => { 
+        data.metrics.revision += 1; control.refresh(); }
+      }">Revision +1</button>
+    </div>
+    <table class="demo-table">
+      <thead>
+        <tr><th>Block</th><th>Rev.</th></tr>
+      </thead>
+      <tbody>
+        \${renderItems()}
+      </tbody>
+    </table>
+    <p class="inline-note">The outsourced row renderer uses the same oRoot, but the main template path stays shorter.</p>
+  </div>
+\`;
+});`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const data = {
+					items: [
+						{ title: 'Hero section' },
+						{ title: 'API examples' }
+					],
+					metrics: {
+						revision: 1
+					}
+				};
+				let control = synd({ data, container }, (oData, oRoot) => {
+					const renderItems = () => oRoot.for('.items', item => html`
+						<tr>
+							<td>${item.title}</td>
+							<td>${oRoot.with('.metrics', $ => $.revision)}</td>
+						</tr>
+					`);
+
+					return html`
+						<div class="demo-stack">
+							<div class="button-row">
+								<button class="demo-button" onClick="${() => { data.items.push({ title: 'New row ' }); control.refresh(); }}">New row</button>
+								<button class="demo-button" onClick="${() => { data.metrics.revision += 1; control.refresh(); }}">Revision +1</button>
+							</div>
+							<table class="demo-table">
+								<thead>
+									<tr><th>Block</th><th>Rev.</th></tr>
+								</thead>
+								<tbody>
+									${renderItems()}
+								</tbody>
+							</table>
+							<p class="inline-note">The outsourced row renderer uses the same oRoot, but the main template path stays shorter.</p>
+						</div>
+					`;
+				});
+
+				return { control, data };
+			}
+		},
+		{
+			title: '12. A complex, multi-branch pattern',
+			description: 'The closing example is a mini editing surface: multiple data branches, lists, filters, and conditional blocks update side by side.',
+			code: asCode(`const phases = ['draft', 'review', 'ready'];
+const palette = ['homok', 'tenger', 'terra'];
+let control;
+
+const recompute = () => {
+  data.summary.totalBlocks = data.blocks.length;
+  data.summary.readyCount = data.blocks.filter(block => block.ready).length;
+  data.summary.totalWords = data.blocks.reduce((sum, block) => sum + block.words, 0);
+};
+
+const pushLog = label => {
+  data.log.unshift({ label });
+  data.log.splice(6);
+};
+
+const cyclePhase = () => {
+  const index = phases.indexOf(data.project.phase);
+  data.project.phase = phases[(index + 1) % phases.length];
+  pushLog('Phase change: ' + data.project.phase);
+  control.refresh();
+};
+
+const cycleAccent = () => {
+  const index = palette.indexOf(data.project.accent);
+  data.project.accent = palette[(index + 1) % palette.length];
+  pushLog('Palette change: ' + data.project.accent);
+  control.refresh();
+};
+
+const addBlock = () => {
+  data.blocks.splice(1, 0, {
+    id: data.nextId,
+    title: 'New section ' + data.nextId,
+    words: 110 + data.nextId * 35,
+    ready: false
+  });
+  pushLog('New block inserted');
+  data.nextId += 1;
+  recompute();
+  control.refresh();
+};
+
+const exportView = () => {
+  data.counters.exports += 1;
+  pushLog('Export futtatva #' + data.counters.exports);
+  control.refresh();
+};
+
+const bumpRevision = () => {
+  data.counters.revisions += 1;
+  pushLog('Revision incremented');
+  control.refresh();
+};
+
+const toggleFilter = () => {
+  data.filters.onlyReady = !data.filters.onlyReady;
+  pushLog(data.filters.onlyReady ? 'Filter: ready blocks only' : 'Filter: all blocks');
+  control.refresh();
+};
+
+const toggleNote = () => {
+  data.project.noteVisible = !data.project.noteVisible;
+  pushLog(data.project.noteVisible ? 'Note shown' : 'Note hidden');
+  control.refresh();
+};
+
+recompute();
+
+control = synd({ data, container }, (oData, oRoot) => html\`
+  <div class="workspace">
+    <div class="workspace-top">
+      \${oRoot.with('.project', $ => html\`
+        <div class="workspace-title">
+          <span class="kicker">complex synd</span>
+          <h4>\${$.title}</h4>
+          <p>Phase: <strong>\${$.phase}</strong> • palette: <strong>\${$.accent}</strong></p>
+        </div>
+      \`)}
+      <div class="button-row">
+        <button class="demo-button" onClick="\${bumpRevision}">Revision +1</button>
+        <button class="demo-button" onClick="\${exportView}">Export</button>
+        <button class="demo-button" onClick="\${addBlock}">New block</button>
+        <button class="demo-button" onClick="\${toggleFilter}">Filter</button>
+        <button class="demo-button" onClick="\${toggleNote}">Note</button>
+        <button class="demo-button" onClick="\${cyclePhase}">Phase</button>
+        <button class="demo-button" onClick="\${cycleAccent}">Palette</button>
+      </div>
+    </div>
+    <div class="metric-grid">
+      \${oRoot.with('.summary', $ => html\`
+        <div class="metric-card"><span class="metric-label">Blocks</span><strong>\${$.totalBlocks}</strong></div>
+        <div class="metric-card"><span class="metric-label">Ready</span><strong>\${$.readyCount}</strong></div>
+        <div class="metric-card"><span class="metric-label">Word count</span><strong>\${$.totalWords}</strong></div>
+      \`)}
+      \${oRoot.with('.counters', $ => html\`
+        <div class="metric-card"><span class="metric-label">Revision</span><strong>\${$.revisions}</strong></div>
+        <div class="metric-card"><span class="metric-label">Export</span><strong>\${$.exports}</strong></div>
+      \`)}
+    </div>
+    <div class="workspace-columns">
+      <div>
+        <h5>Content blocks</h5>
+        <div class="list-shell">
+          \${oRoot.for('.blocks', block => html\`
+            <div>
+              \${oRoot.with('.filters', $ => $.onlyReady && !block.ready ? null : html\`
+                <article class="list-item">
+                  <div>
+                    <strong>\${block.title}</strong>
+                    <div class="meta-row">
+                      <span>\${block.words} words</span>
+                      \${block.ready ? html\`<span class="status-pill ready">ready</span>\` : html\`<span class="status-pill waiting">in progress</span>\`}
+                      <span class="status-pill neutral">rev \${oRoot.with('.counters', $ => $.revisions)}</span>
+                    </div>
+                  </div>
+                  <div class="button-row">
+                    <button class="demo-button small" onClick="\${() => { block.ready = !block.ready; recompute(); pushLog(block.title + (block.ready ? ' marked ready' : ' reopened')); control.refresh(); }}">Status</button>
+                    <button class="demo-button small" onClick="\${() => { const index = data.blocks.indexOf(block); if (index === -1) return; data.blocks.splice(index, 1); recompute(); pushLog(block.title + ' deleted'); control.refresh(); }}">Delete</button>
+                  </div>
+                </article>
+              \`)}
+            </div>
+          \`)}
+        </div>
+      </div>
+      <div>
+        <h5>Notes and log</h5>
+        \${oRoot.with('.project', $ => $.noteVisible ? html\`
+          <div class="note-box">
+            <p>This example combines object watching, array updates, conditional rendering, and multiple global watchers per row. In the block rows, local data, the filter, and the global counter all come together.</p>
+          </div>
+        \` : null)}
+        <div class="list-shell log-shell">
+          \${oRoot.for('.log', entry => html\`<div class="log-item">\${entry.label}</div>\`)}
+        </div>
+      </div>
+    </div>
+  </div>
+\`);
+
+return { control, data };`),
+			liveDataBeforeCode: true,
+			render: container => {
+				const phases = ['draft', 'review', 'ready'];
+				const palette = ['homok', 'tenger', 'terra'];
+				const data = {
+					nextId: 4,
+					project: {
+						title: 'html + synd demo page',
+						phase: 'draft',
+						accent: 'homok',
+						noteVisible: true
+					},
+					counters: {
+						revisions: 1,
+						exports: 0
+					},
+					filters: {
+						onlyReady: false
+					},
+					summary: {
+						totalBlocks: 0,
+						readyCount: 0,
+						totalWords: 0
+					},
+					blocks: [
+						{ id: 1, title: 'Opening title block', words: 120, ready: true },
+						{ id: 2, title: 'Usage steps', words: 260, ready: false },
+						{ id: 3, title: 'Complex synd pattern', words: 420, ready: true }
+					],
+					log: [
+						{ label: 'Project scaffold created' },
+						{ label: 'First synd watcher activated' }
+					]
+				};
+				let control;
+
+				const recompute = () => {
+					data.summary.totalBlocks = data.blocks.length;
+					data.summary.readyCount = data.blocks.filter(block => block.ready).length;
+					data.summary.totalWords = data.blocks.reduce((sum, block) => sum + block.words, 0);
+				};
+
+				const pushLog = label => {
+					data.log.unshift({ label });
+					data.log.splice(6);
+				};
+
+				const cyclePhase = () => {
+					const index = phases.indexOf(data.project.phase);
+					data.project.phase = phases[(index + 1) % phases.length];
+					pushLog('Phase change: ' + data.project.phase);
+					control.refresh();
+				};
+
+				const cycleAccent = () => {
+					const index = palette.indexOf(data.project.accent);
+					data.project.accent = palette[(index + 1) % palette.length];
+					pushLog('Palette change: ' + data.project.accent);
+					control.refresh();
+				};
+
+				const addBlock = () => {
+					data.blocks.splice(1, 0, {
+						id: data.nextId,
+						title: 'New section ' + data.nextId,
+						words: 110 + data.nextId * 35,
+						ready: false
+					});
+					pushLog('New block inserted');
+					data.nextId += 1;
+					recompute();
+					control.refresh();
+				};
+
+				const exportView = () => {
+					data.counters.exports += 1;
+					pushLog('Export futtatva #' + data.counters.exports);
+					control.refresh();
+				};
+
+				const bumpRevision = () => {
+					data.counters.revisions += 1;
+					pushLog('Revision incremented');
+					control.refresh();
+				};
+
+				const toggleFilter = () => {
+					data.filters.onlyReady = !data.filters.onlyReady;
+					pushLog(data.filters.onlyReady ? 'Filter: ready blocks only' : 'Filter: all blocks');
+					control.refresh();
+				};
+
+				const toggleNote = () => {
+					data.project.noteVisible = !data.project.noteVisible;
+					pushLog(data.project.noteVisible ? 'Note shown' : 'Note hidden');
+					control.refresh();
+				};
+
+				recompute();
+
+				control = synd({ data, container }, (oData, oRoot) => html`
+					<div class="workspace">
+						<div class="workspace-top">
+							${oRoot.with('.project', $ => html`
+								<div class="workspace-title">
+									<span class="kicker">complex synd</span>
+									<h4>${$.title}</h4>
+									<p>Phase: <strong>${$.phase}</strong> • palette: <strong>${$.accent}</strong></p>
+								</div>
+							`)}
+							<div class="button-row">
+								<button class="demo-button" onClick="${bumpRevision}">Revision +1</button>
+								<button class="demo-button" onClick="${exportView}">Export</button>
+								<button class="demo-button" onClick="${addBlock}">New block</button>
+								<button class="demo-button" onClick="${toggleFilter}">Filter</button>
+								<button class="demo-button" onClick="${toggleNote}">Note</button>
+								<button class="demo-button" onClick="${cyclePhase}">Phase</button>
+								<button class="demo-button" onClick="${cycleAccent}">Palette</button>
+							</div>
+						</div>
+						<div class="metric-grid">
+							${oRoot.with('.summary', $ => html`
+								<div class="metric-card"><span class="metric-label">Blocks</span><strong>${$.totalBlocks}</strong></div>
+								<div class="metric-card"><span class="metric-label">Ready</span><strong>${$.readyCount}</strong></div>
+								<div class="metric-card"><span class="metric-label">Word count</span><strong>${$.totalWords}</strong></div>
+							`)}
+							${oRoot.with('.counters', $ => html`
+								<div class="metric-card"><span class="metric-label">Revision</span><strong>${$.revisions}</strong></div>
+								<div class="metric-card"><span class="metric-label">Export</span><strong>${$.exports}</strong></div>
+							`)}
+						</div>
+						<div class="workspace-columns">
+							<div>
+								<h5>Content blocks</h5>
+								<div class="list-shell">
+									${oRoot.for('.blocks', block => html`
+										<div>${oRoot.with('.filters', $ => $.onlyReady && !block.ready ? null : html`
+											<article class="list-item">
+												<div>
+													<strong>${block.title}</strong>
+													<div class="meta-row">
+														<span>${block.words} words</span>
+														${block.ready ? html`<span class="status-pill ready">ready</span>` : html`<span class="status-pill waiting">megy</span>`}
+														<span class="status-pill neutral">rev ${oRoot.with('.counters', $ => $.revisions)}</span>
+													</div>
+												</div>
+												<div class="button-row">
+													<button class="demo-button small" onClick="${() => { block.ready = !block.ready; recompute(); pushLog(block.title + (block.ready ? ' marked ready' : ' reopened')); control.refresh(); }}">Status</button>
+													<button class="demo-button small" onClick="${() => { const index = data.blocks.indexOf(block); if (index === -1) return; data.blocks.splice(index, 1); recompute(); pushLog(block.title + ' deleted'); control.refresh(); }}">Delete</button>
+												</div>
+											</article>
+										`)}</div>
+									`)}
+								</div>
+							</div>
+							<div>
+								<h5>Notes and log</h5>
+								${oRoot.with('.project', $ => $.noteVisible ? html`
+									<div class="note-box">
+										<p>This example combines object watching, array updates, conditional rendering, and multiple global watchers per row. In the block rows, local data, the filter, and the global counter all come together.</p>
+									</div>
+								` : null)}
+								<div class="list-shell log-shell">
+									${oRoot.for('.log', entry => html`<div class="log-item">${entry.label}</div>`)}
+								</div>
+							</div>
+						</div>
+					</div>
+				`);
+
+				return { control, data };
+			}
+		}
+	]
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+	const page = createEl('main', 'page')
+	document.body.append(page)
+
+	page.append(html`
+		<section class="hero">
+			<div>
+				<span class="kicker">html + synd</span>
+				<h1>Interactive introduction to the html and synd APIs.</h1>
+				<p>The code always appears on the left, and the running result on the right. html builds DOM, and synd binds the same thing to live data.</p>
+			</div>
+		</section>
+	`)
+
+	const htmlSection = createEl('section', 'section-block');
+	htmlSection.append(createSectionHead('1. html: building DOM from template strings', 'These examples show how html creates real DOM nodes, which values can be interpolated, and how it handles events and native HTML features.'))
+	renderExamples(htmlSection, getHtmlExamples())
+	page.append(htmlSection)
+
+	const syndSection = createEl('section', 'section-block')
+	syndSection.append(createSectionHead('2. synd: the live, data-driven counterpart to html', 'Here the same template not only gets built, but also updates in response to changes in a data object. The examples progress from a simple object to more complex lists.'))
+	syndSection.append(createSyndIntroBlock())
+	renderExamples(syndSection, getSyndExamples())
+	page.append(syndSection)
+	page.append(createApiSummarySection())
+})
+
+	</script>
+</head>
+
+<body>
+</body>
+
+</html>

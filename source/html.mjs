@@ -2,15 +2,15 @@ import { diffDeep, JSONPath, getByPath, setByPath, assertNoReferenceRedundancies
 
 class SyndWatcher {
 	/** @type {Synd} */ synd = undefined;
-	/** @type {JSONPath} */ path = undefined; // Abszolut JSON path a synd data-n belül
-	/** @type {HTMLElement|Attr} */ parent = undefined; // Az a DOM elem vagy Attr, amibe a wathcer által renderelt elemek kerülnek
-	/** @type {Text} */ startNode = undefined; // A szülőn belül a saját elemeket megelőző láthatatlan node
-	/** @type {Text} */ endNode = undefined; // A szülőn belül a saját elemeket követő láthatatlan node
-	/** @type {(x:any)=>DocumentFragment} */ template = undefined; // Ez a saját elemeket renderelő, ált. html`` függvény
+	/** @type {JSONPath} */ path = undefined; // Absolute JSON path within the synd data
+	/** @type {HTMLElement|Attr} */ parent = undefined; // The DOM element or Attr into which the elements rendered by the watcher are inserted
+	/** @type {Text} */ startNode = undefined; // Invisible node before this watcher's own elements within the parent
+	/** @type {Text} */ endNode = undefined; // Invisible node after this watcher's own elements within the parent
+	/** @type {(x:any)=>DocumentFragment} */ template = undefined; // The template function, usually an html`` function, that renders this watcher's own elements
 	/** @type {{ renderContext?: { currentWatcher?: SyndWatcher } }} */ templateAPIState = undefined;
 	/** @type {{for: SyndWatcher['for'], with: SyndWatcher['with'], set: SyndWatcher['set'], refresh: SyndWatcher['refresh']}} */ templateAPI = undefined;
 	/** @type {boolean} */ forWatcher = false;
-	/** @type {SyndWatcher[]} */ inners = undefined; // Belső watcherek. Ezek nem csak ide kerülnek, hanem a root synd-be is!
+	/** @type {SyndWatcher[]} */ inners = undefined; // Inner watchers. These are stored here and also in the root synd!
 	constructor(oParams) {
 		Object.assign(this, oParams);
 		this.templateAPIState = { renderContext: oParams.renderContext };
@@ -34,7 +34,7 @@ class SyndWatcher {
 	renderAttribute(data, renderContext, oRenderParent, oOwnerParent) {
 		return this.synd.renderTemplateValue(this.template, data, this, this.parent, renderContext, oRenderParent, oOwnerParent);
 	}
-	wrapFragment(oContentFragment) { // Becsomagolja két node közé a fragmentet. Ha nincs normalize sehol, ez tökéletes és láthatatlan
+	wrapFragment(oContentFragment) { // Wraps the fragment between two nodes. If normalize is not used anywhere, this is perfect and invisible
 		this.startNode = document.createTextNode(''); // document.createComment('synd:start');
 		this.endNode = document.createTextNode(''); // document.createComment('synd:end');
 		const oFragment = document.createDocumentFragment();
@@ -71,19 +71,19 @@ class SyndWatcher {
 		for (const oInner of this.inners ?? [])
 			oInner.rebasePath(aOldBasePath, aNewBasePath);
 	}
-	reindexInnerWatchers(iStart = 0) { // Tömböknél átszámolja a JSONPath értéket az indexek alapján
+	reindexInnerWatchers(iStart = 0) { // Reindexes JSONPath values by array index
 		const aInners = this.inners ?? [];
 		for (let i = iStart, il = aInners.length; i < il; i++) {
 			const oInner = aInners[i];
 			oInner.rebasePath(oInner.path, [...this.path, i]);
 		}
 	}
-	renderFor(path, template, parent, renderContext = this.templateAPIState.renderContext) { // A parent csoport a html``-ből jön, a másik kettőt a júzer adja át
+	renderFor(path, template, parent, renderContext = this.templateAPIState.renderContext) { // The parent group comes from html``, the other two are passed by the user
 		if (!(parent instanceof Element))
 			throw new TypeError('"for" must be used inside an element parent');
 		if (!renderContext)
 			throw new TypeError('Render context missing for "for"');
-		if (template === undefined && typeof path === 'function') { template = path; path = '' }; // Lehet hogy nincs path
+		if (template === undefined && typeof path === 'function') { template = path; path = '' }; // There may be no path
 		const aFullPath = this.resolvePath(path);
 		const aData = getByPath(this.synd.data, aFullPath);
 		if (!Array.isArray(aData)) throw new TypeError('"for" only usable for arrays');
@@ -101,13 +101,13 @@ class SyndWatcher {
 		(oRenderParent.inners ??= []).push(oBaseWatcher);
 		return oAllItems;
 	}
-	renderWith(path, template, parent, renderContext = this.templateAPIState.renderContext) { // A parent a html``-ből jön, a context pedig Element vagy Attr
+	renderWith(path, template, parent, renderContext = this.templateAPIState.renderContext) { // The parent comes from html``, and the context is an Element or Attr
 		const bAttributeBinding = parent instanceof Attr;
 		if (!bAttributeBinding && !(parent instanceof Element))
 			throw new TypeError('"with" must be used inside an element parent');
 		if (!renderContext)
 			throw new TypeError('Render context missing for "with"');
-		// if (template === undefined && typeof path === 'function') { template = path; path = '' }; // Lehet hogy nincs path
+		// if (template === undefined && typeof path === 'function') { template = path; path = '' }; // There may be no path
 		const aFullPath = this.resolvePath(path);
 		const oData = getByPath(this.synd.data, aFullPath);
 		if (typeof oData !== 'object' || Array.isArray(oData)) throw new TypeError('"with" only usable for objects');
@@ -119,8 +119,8 @@ class SyndWatcher {
 		return vResult;
 	}
 	set = (path, value) => {
-		if (value === undefined) { value = path; path = '' }; // Lehet hogy nincs path
-		if (value instanceof Event) // Csak az e lett átadva
+		if (value === undefined) { value = path; path = '' }; // There may be no path
+		if (value instanceof Event) // Only the event object was passed
 			value = value.target.value;
 		setByPath(this.synd.data, this.resolvePath(path), value);
 		this.synd.refresh();
@@ -143,7 +143,7 @@ class Synd {
 	/** @type {SyndWatcher} */
 	#rootWatcher;
 	/** @type {Map<string,Set<SyndWatcher>>} */
-	#map = new Map(); // Itt van az összes watcher abszolut JSONPath alapján
+	#map = new Map(); // All watchers indexed by absolute JSONPath are stored here
 	#backup;
 	#data;
 	#container;
@@ -261,7 +261,7 @@ class Synd {
 		const { path, parent, template } = oBaseWatcher;
 		const inners = oBaseWatcher.inners ??= [];
 		const oBaseChild = inners[iInnerIndex]?.startNode ?? oBaseWatcher.endNode;
-		// Az insert után lévő watcherek kiszedése a mapból
+		// Remove watchers after the insertion point from the map
 		for (let i = iInnerIndex, il = inners.length; i < il; i++)
 			this.#removeWatcherSubtreeFromMap(inners[i]);
 		aData.forEach((vVal, i) => {
@@ -271,7 +271,7 @@ class Synd {
 			inners.splice(iInnerIndex +i, 0, oNewWatcher);
 			parent.insertBefore(oFragment, oBaseChild);
 		});
-		// Az insert után lévő watcherek visszaírása a mapba
+		// Re-add watchers after the insertion point to the map
 		oBaseWatcher.reindexInnerWatchers(iInnerIndex +aData.length);
 		for (let i = iInnerIndex +aData.length, il = inners.length; i < il; i++) {
 			this.#addWatcherSubtreeToMap(inners[i]);
@@ -279,14 +279,14 @@ class Synd {
 	}
 	#delete(oBaseWatcher, iInnerIndex, iLength) {
 		const { inners } = oBaseWatcher;
-		// A törlési pont után lévő watcherek kiszedése a mapból
+		// Remove watchers after the deletion point from the map
 		for (let i = iInnerIndex +iLength, il = inners.length; i < il; i++)
 			this.#removeWatcherSubtreeFromMap(inners[i]);
 		for (let i = iInnerIndex +iLength -1; i >= iInnerIndex; i--) {
 			const oWatcher = inners[i];
 			this.removeWatcher(oWatcher, oBaseWatcher);
 		}
-		// Az insert után lévő watcherek visszaírása a mapba
+		// Re-add watchers after the insertion point to the map
 		oBaseWatcher.reindexInnerWatchers(iInnerIndex);
 		for (let i = iInnerIndex, il = inners.length; i < il; i++) {
 			this.#addWatcherSubtreeToMap(inners[i]);
@@ -296,9 +296,9 @@ class Synd {
 		const aArrayWatchers = aWatchersAtPath.filter(oWatcher => oWatcher.forWatcher);
 		const aPlainWatchers = aWatchersAtPath.filter(oWatcher => !oWatcher.forWatcher);
 
-		if (sType === 'ins' || sType === 'del') // ins/del esetén az array-watcherek kapnak prioritást
+		if (sType === 'ins' || sType === 'del') // For ins/del, array watchers have priority
 			return aArrayWatchers.length ? aArrayWatchers : aPlainWatchers; 
-		return aPlainWatchers.length ? aPlainWatchers : aArrayWatchers; // val/set/rem esetén a sima watcherek kapnak prioritást
+		return aPlainWatchers.length ? aPlainWatchers : aArrayWatchers; // For val/set/rem, plain watchers have priority
 	}
 	#applyDiffsAndSync(aDiffs, renderContext) {
 		aDiffs.forEach(([aDiffPath, sType, vKey, vVal]) => {
@@ -484,7 +484,7 @@ html.parser = (aChunks, aValues, aExtraParams = [], bSvg = false) => {
 	};
 
 	let oCurrentElement, oParent = oResult, bQuoteExpected, bAttributeExpected, aClosers = [], sPendingLiveAttributeName;
-	const changeToCustomElement = sIs => { // Ez lecseréli a jelenlegi elemet egy custom változatra
+	const changeToCustomElement = sIs => { // Replaces the current element with a customized built-in
 		const oCustomElement = document.createElement(oCurrentElement.localName, { is: sIs });
 		for (const oAttr of oCurrentElement.attributes)
 			oCustomElement.setAttribute(oAttr.name, oAttr.value);
