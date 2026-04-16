@@ -24,6 +24,16 @@ Simply download [deploy/synd.mjs](https://github.com/Zedas74/Synd/blob/main/depl
 </html>
 ```
 
+## Examples
+
+See below for API code explanations.
+
+[Dynamic form demo](https://zedas74.github.io/Synd/examples/synd_form.html)
+[Editable grid](https://zedas74.github.io/Synd/examples/synd_grid.html)
+[Nested lists and live list element updates](https://zedas74.github.io/Synd/examples/synd_list.html)
+[SVG demo](https://zedas74.github.io/Synd/examples/synd_svg.html)
+[General demo](https://zedas74.github.io/Synd/examples/synd_demo.en.html)
+
 ## Okay, but what exactly is html\`\` for?
 
 A long-standing problem is that producing DOM with events from JavaScript can only be done in two ways: either we create the elements ourselves with DOM-manipulation methods, or we use string-based HTML and add the events afterward (for now, let us ignore the classic "onclick" and similar events, because they cause countless problems and nobody recommends using them).

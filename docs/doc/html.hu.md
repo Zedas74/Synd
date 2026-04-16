@@ -24,6 +24,16 @@ Egyszerűen töltsd le a [deploy/synd.mjs](https://github.com/Zedas74/Synd/blob/
 </html>
 ```
 
+## Példák
+
+Az API magyarázatokat ld. lentebb.
+
+[Dinamikus form demó](https://zedas74.github.io/Synd/examples/synd_form.html)
+[Szerkeszthető rács](https://zedas74.github.io/Synd/examples/synd_grid.html)
+[Beágyazás és élő lista elemek](https://zedas74.github.io/Synd/examples/synd_list.html)
+[SVG minta](https://zedas74.github.io/Synd/examples/synd_svg.html)
+[Demó](https://zedas74.github.io/Synd/examples/synd_demo.en.html)
+
 ## Jó, de mire is való pontosan a html\`\`?
 
 Régi probléma, hogy JavaScriptből eventekkel ellátott DOM-ot előállítani csak kétféle módon lehet: vagy mi hozzuk létre az elemeket, DOM manipuláló metódusokkal, vagy string alapú HTML-t használunk, és utólag adjuk hozzá az eventeket (a klasszikus "onclick" és hasonló eventektől most tekintsünk el, mert azokkal számtalan probléma van, és senki sem javasolja a használatukat).
