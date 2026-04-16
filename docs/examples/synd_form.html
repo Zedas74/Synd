@@ -29,16 +29,21 @@ const oPage = synd({ data, container: document.body }, (_, root) => html`
 		<p>Check the source to see how it works.</p>
 		<hr/>
 		<p>
+			Edit field for value 1:<br/>
 			<input value="${root.with('.forms.test', $ => $.value1)}" onInput="${e => root.set('.forms.test.value1', e)}"/><br/>
+			Edit field for value 2:<br/>
 			<input value="${root.with('.forms.test', $ => $.value2)}" onInput="${e => root.set('.forms.test.value2', e)}"/><br/>
+			Echo of value 1:<br/>
 			<b>${root.with('.forms.test', $ => $.value1)}</b><br/>
+			Echo of value 2:<br/>
 			<b>${root.with('.forms.test', $ => $.value2)}</b><br/>
+			Another edit field for value 1, to show multiple editing of the same data:<br/>
 			<input value="${root.with('.forms.test', $ => $.value1)}" onInput="${e => root.set('.forms.test.value1', e)}"/><br/>
-		</p>
-		<p>
+			Select example:<br/>
 			<select psValue="${root.with('.forms.test', $ => $.select)}" onChange="${e => root.set('.forms.test.select', e.target.value |0)}">${
 				['Zero', 'One', 'Two', 'Three'].map((s, i) => html`<option value="${i}">${s}</option>`)
 			}</select><br/>
+			Selected value:<br/>
 			<b>${root.with('.forms.test', $ => $.select)}</b>
 		</p>
 		<hr/>
