@@ -24,15 +24,15 @@ Egyszerűen töltsd le a [deploy/synd.mjs](https://github.com/Zedas74/Synd/blob/
 </html>
 ```
 
-## Példák
+## Működő példák
 
 Az API magyarázatokat ld. lentebb.
 
-[Dinamikus form demó](https://zedas74.github.io/Synd/examples/synd_form.html)
-[Szerkeszthető rács](https://zedas74.github.io/Synd/examples/synd_grid.html)
-[Beágyazás és élő lista elemek](https://zedas74.github.io/Synd/examples/synd_list.html)
-[SVG minta](https://zedas74.github.io/Synd/examples/synd_svg.html)
-[Demó](https://zedas74.github.io/Synd/examples/synd_demo.en.html)
+- [Dinamikus form demó](https://zedas74.github.io/Synd/examples/synd_form.html)
+- [Szerkeszthető rács](https://zedas74.github.io/Synd/examples/synd_grid.html)
+- [Beágyazás és élő lista elemek](https://zedas74.github.io/Synd/examples/synd_list.html)
+- [SVG minta](https://zedas74.github.io/Synd/examples/synd_svg.html)
+- [Demó](https://zedas74.github.io/Synd/examples/synd_demo.en.html)
 
 ## Jó, de mire is való pontosan a html\`\`?
 

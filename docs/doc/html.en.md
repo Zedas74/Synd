@@ -24,15 +24,15 @@ Simply download [deploy/synd.mjs](https://github.com/Zedas74/Synd/blob/main/depl
 </html>
 ```
 
-## Examples
+## Working examples
 
 See below for API code explanations.
 
-[Dynamic form demo](https://zedas74.github.io/Synd/examples/synd_form.html)
-[Editable grid](https://zedas74.github.io/Synd/examples/synd_grid.html)
-[Nested lists and live list element updates](https://zedas74.github.io/Synd/examples/synd_list.html)
-[SVG demo](https://zedas74.github.io/Synd/examples/synd_svg.html)
-[General demo](https://zedas74.github.io/Synd/examples/synd_demo.en.html)
+- [Dynamic form demo](https://zedas74.github.io/Synd/examples/synd_form.html)
+- [Editable grid](https://zedas74.github.io/Synd/examples/synd_grid.html)
+- [Nested lists and live list element updates](https://zedas74.github.io/Synd/examples/synd_list.html)
+- [SVG demo](https://zedas74.github.io/Synd/examples/synd_svg.html)
+- [General demo](https://zedas74.github.io/Synd/examples/synd_demo.en.html)
 
 ## Okay, but what exactly is html\`\` for?
 
