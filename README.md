@@ -1,4 +1,4 @@
-# HTML and SYND
+# HTML, SVG and SYND
 
 The synd() function and the html\`\` template string were created to make rendering data-based HTML pages in browsers easier and simpler.
 
@@ -143,7 +143,7 @@ synd() is a function that expects a `data` object, a `container` object, and a t
 
 `with` runs an inner template function on a part of `data` (in the example, the inner `.counter` object), and synd inserts it in place of the `with` call. In addition, it creates a live link between the data and the DOM in the background, so if we modify anything inside the part managed by `with` (at any depth), the part described by the template is refreshed in the DOM (**and only that part**).
 
-In the example, pressing the button increments `data.counter.value`, and then we ask the whole synd instance to refresh itself. synd then figures out which template part inside the `with` is affected, and rebuilds only that part.
+In the example, pressing the button increments `data.counter.value`, and then we ask the whole synd instance to refresh itself. Synd then figures out which template part inside the `with` is affected, and rebuilds only that part.
 
 The `$` variable in the example is actually the same as `data` in `root`: it is the relevant part of the original JSON object, sliced out by the `.counter` path, which here is `{ value: 0 }`.
 
@@ -179,7 +179,7 @@ const oPage = synd({ data, container: document.body }, (_, root) => html`
 - The inner `row.for` does not contain a path, because it uses the parent data directly (it would be equivalent to calling `row.for('', ($, cell) => … )`).
 - The `cell.set` shorthand is actually equivalent to this: `e => cell.set(e)`, which is in fact this: `e => cell.set('', e)`. And that is equivalent to this: `e => set('', e.target.value)`.
 - `set` really just writes the value back into the data and calls `synd.refresh()`. Obviously, if multiple fields change at once, that is not economical, and it is better to call `refresh()` separately, as you can also see with the buttons.
-- synd makes it possible, for example, when adding columns, for the other rendered <td> elements not to change.
+- Synd makes it possible, for example, when adding columns, for the other rendered <td> elements not to change.
 
 ## Highlight in VSCode
 

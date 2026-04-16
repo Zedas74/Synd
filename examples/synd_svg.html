@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Synd SVG</title>
+	<link rel="shortcut icon" href="#" />
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<style>
+
+table { border-collapse: collapse; border: 1px solid silver; margin: 0.5rem }
+td { border: 1px solid silver }
+
+	</style>
+	<script type="module">
+import { html, svg, synd } from './synd.mjs';
+const clamp100 = value => Math.max(0, Math.min(100, Number(value) || 0));
+const pieRadius = 50;
+const pieCircumference = 2 * Math.PI * pieRadius;
+
+const data = {
+	chart: {
+		value: 42,
+	},
+}
+
+const oPage = synd({ data, container: document.body }, (_, root) => html`
+	<div>
+		<p>This example shows how to use synd with svg.</p>
+		<p>Check the source to see how it works.</p>
+		<hr/>
+		<label>
+			Pie chart: <input type="text" inputMode="numeric" pattern="\\d{1,3}" maxlength="3" value="${root.with('.chart', $ => $.value)}" onInput="${e => root.set('.chart.value', e)}" />
+		</label>
+		<div style="width: 180px; margin-top: 0.75rem">
+			${svg`<svg viewBox="0 0 120 120" width="180" height="180" role="img" aria-label="Pie chart">
+				<circle cx="60" cy="60" r="50" fill="none" stroke="#e5e7eb" stroke-width="18"></circle>
+				<circle cx="60" cy="60" r="50" fill="none" stroke="#2563eb" stroke-width="18" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="${
+					root.with('.chart', $ => `${(clamp100($.value) / 100) *pieCircumference} ${pieCircumference}`)}"></circle>
+				<text x="60" y="60" text-anchor="middle" dominant-baseline="middle" style="font: 700 16px sans-serif; fill: #111827">${
+					root.with('.chart', $ => `${clamp100($.value)}%`)}</text>
+			</svg>`}
+		</div>
+	</div>
+`);
+
+	</script>
+</head>
+
+<body>
+</body>
+
+</html>

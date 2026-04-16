@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Synd form</title>
+	<link rel="shortcut icon" href="#" />
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<style>
+
+table { border-collapse: collapse; border: 1px solid silver; margin: 0.5rem }
+td { border: 1px solid silver }
+
+	</style>
+	<script type="module">
+import { html, synd } from './synd.mjs';
+const data = {
+	forms: {
+		test: {
+			value1: 'one',
+			value2: 'two',
+			select: 1
+		}
+	}
+}
+
+const oPage = synd({ data, container: document.body }, (_, root) => html`
+	<div>
+		<p>This example shows how you can create a dynamic form with synd.</p>
+		<p>Check the source to see how it works.</p>
+		<hr/>
+		<p>
+			<input value="${root.with('.forms.test', $ => $.value1)}" onInput="${e => root.set('.forms.test.value1', e)}"/><br/>
+			<input value="${root.with('.forms.test', $ => $.value2)}" onInput="${e => root.set('.forms.test.value2', e)}"/><br/>
+			<b>${root.with('.forms.test', $ => $.value1)}</b><br/>
+			<b>${root.with('.forms.test', $ => $.value2)}</b><br/>
+			<input value="${root.with('.forms.test', $ => $.value1)}" onInput="${e => root.set('.forms.test.value1', e)}"/><br/>
+		</p>
+		<p>
+			<select psValue="${root.with('.forms.test', $ => $.select)}" onChange="${e => root.set('.forms.test.select', e.target.value |0)}">${
+				['Zero', 'One', 'Two', 'Three'].map((s, i) => html`<option value="${i}">${s}</option>`)
+			}</select><br/>
+			<b>${root.with('.forms.test', $ => $.select)}</b>
+		</p>
+		<hr/>
+		<p>
+			<button onClick="${() => root.set('.forms.test.select', (data.forms.test.select +1) % 4)}">Cycle select</button>
+			<button onClick="${() => console.dir(data.forms.test)}">Echo data to the console</button>
+			<button onClick="${e => e.target.closest('div').querySelectorAll('input,b,select').forEach((o, i) => o.style ? o.style.color = ['red', 'green'][i % 2] : null)}">Colorize DOM to show what changed</button>
+		</p>
+	</div>
+`);
+
+	</script>
+</head>
+
+<body>
+</body>
+
+</html>

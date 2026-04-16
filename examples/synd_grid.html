@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Synd grid</title>
+	<link rel="shortcut icon" href="#" />
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<style>
+
+table { border-collapse: collapse; border: 0; margin: 0.5rem; }
+td { border: 1px solid silver; padding: 0; }
+td > input { background:transparent; color: inherit; border: none; padding: 4px; }
+
+	</style>
+	<script type="module">
+import { html, synd } from './synd.mjs';
+const data = {
+	grid: [
+		['0.0', '0.1'],
+		['1.0', '1.1'],
+	],
+}
+
+const oPage = synd({ data, container: document.body }, (_, root) => html`
+	<div>
+		<p>This example shows the power and simplicity of synd by creating an editable, resizable grid.</p>
+		<p>Check the source to see how it works.</p>
+		<hr/>
+		<p>
+			<button onClick="${() => { data.grid.push(data.grid[0]?.map((_, i) => `${data.grid.length}.${i}`) ?? ['0.0']); root.refresh(); }}">Add row</button>
+			<button onClick="${() => { data.grid.forEach((a, i) => a.push(`${i}.${a.length}`)); root.refresh(); }}">Add column</button>
+			<button onClick="${() => { data.grid.pop(); root.refresh(); }}">Delete row</button>
+			<button onClick="${() => { data.grid.forEach((a, i) => a.pop()); root.refresh(); }}">Delete column</button>
+			<button onClick="${() => { data.grid.shift(); root.refresh(); }}">Remove first row</button>
+			<button onClick="${() => { data.grid.forEach((a, i) => a.shift()); root.refresh(); }}">Remove first column</button>
+		</p>
+		<p>
+			<button onClick="${() => console.dir(data.grid)}">Echo data to the console</button>
+			<button onClick="${e => e.target.closest('div').querySelectorAll('td').forEach(o => o.style.color = 'red')}">Colorize all cells to show what changed in the DOM</button>
+		</p>
+		<hr/><br/>
+		<table>${
+			root.for('.grid', (_, row) => html`<tr>${
+				row.for(($, cell) => html`<td><input value="${$}" onChange="${cell.set}"/></td>`)
+			}</tr>`)
+		}</table><br/>
+	</div>
+`);
+
+	</script>
+</head>
+
+<body>
+</body>
+
+</html>
